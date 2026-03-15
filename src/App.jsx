@@ -5,7 +5,6 @@ import { Footer } from './components/Footer'
 
 // Import placeholders for pages
 import { HomePage } from './pages/HomePage'
-import { RoleSelectionPage } from './pages/RoleSelectionPage'
 import { LoginPage } from './pages/auth/LoginPage'
 import { SignupPage } from './pages/auth/SignupPage'
 import { OTPVerifyPage } from './pages/auth/OTPVerifyPage'
@@ -69,7 +68,6 @@ export default function App() {
           {/* Public Routes */}
           <Route element={<PublicLayout />}>
             <Route path="/" element={<HomePage />} />
-            <Route path="/role-selection" element={<RoleSelectionPage />} />
           </Route>
 
           {/* Auth Routes */}

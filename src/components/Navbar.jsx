@@ -68,7 +68,7 @@ export function Navbar({ variant = 'public' }) {
       </div>
       <div className="flex items-center gap-2.5">
         <Link to="/login" className="px-5 py-[9px] rounded-lg text-sm font-medium text-page-text2 bg-transparent border border-page-border2 hover:text-page-text hover:bg-page-border transition-all">Log in</Link>
-        <Link to="/role-selection" className="px-5 py-[9px] rounded-lg text-sm font-semibold text-white bg-page-accent hover:-translate-y-[1px] transition-all tracking-tight">Get started</Link>
+        <Link to="/signup" className="px-5 py-[9px] rounded-lg text-sm font-semibold text-white bg-page-accent hover:-translate-y-[1px] transition-all tracking-tight">Get started</Link>
       </div>
     </nav>
   )

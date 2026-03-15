@@ -63,14 +63,14 @@ export function HomePage() {
               ReadyMD connects Doctors, Nurses, and allied health professionals with hospitals, clinics, and healthcare organisations across India.
             </p>
             <div className="flex flex-wrap gap-3.5 mb-14 fade-up opacity-0 translate-y-7 transition-all duration-700 delay-300">
-              <Link to="/role-selection" className="inline-flex items-center gap-2.5 px-7 py-3.5 rounded-xl text-[15px] font-semibold text-white bg-page-accent hover:bg-[#5a9e55] hover:-translate-y-0.5 shadow-lg shadow-page-accent/20 transition-all">
+              <Link to="/signup?role=employee" className="inline-flex items-center gap-2.5 px-7 py-3.5 rounded-xl text-[15px] font-semibold text-white bg-page-accent hover:bg-[#5a9e55] hover:-translate-y-0.5 shadow-lg shadow-page-accent/20 transition-all">
                 Find your next role
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                   <line x1="5" y1="12" x2="19" y2="12" />
                   <polyline points="12 5 19 12 12 19" />
                 </svg>
               </Link>
-              <Link to="/role-selection" className="inline-flex items-center gap-2.5 px-7 py-3.5 rounded-xl text-[15px] font-medium text-page-text bg-page-surface border border-page-border2 hover:border-page-accent hover:text-page-accent hover:-translate-y-0.5 transition-all">
+              <Link to="/signup?role=recruiter" className="inline-flex items-center gap-2.5 px-7 py-3.5 rounded-xl text-[15px] font-medium text-page-text bg-page-surface border border-page-border2 hover:border-page-accent hover:text-page-accent hover:-translate-y-0.5 transition-all">
                 I'm hiring talent
               </Link>
             </div>
@@ -165,7 +165,7 @@ export function HomePage() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-14">
             {/* Employee */}
-            <Link to="/role-selection" className="group rounded-[20px] p-10 border border-page-border2 bg-page-surface hover:-translate-y-1 hover:border-page-accent relative overflow-hidden transition-all duration-300 block fade-up cursor-pointer">
+            <Link to="/signup?role=employee" className="group rounded-[20px] p-10 border border-page-border2 bg-page-surface hover:-translate-y-1 hover:border-page-accent relative overflow-hidden transition-all duration-300 block fade-up cursor-pointer">
               <div className="absolute inset-0 bg-gradient-to-br from-page-accent/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               <div className="relative z-10">
                 <div className="font-serif text-5xl font-light text-page-border2 leading-none mb-6 group-hover:text-page-accent transition-colors">01</div>
@@ -197,7 +197,7 @@ export function HomePage() {
             </Link>
 
             {/* Recruiter */}
-            <Link to="/role-selection" className="group rounded-[20px] p-10 border border-page-border2 bg-page-bg2 hover:-translate-y-1 hover:border-[#b8880a] relative overflow-hidden transition-all duration-300 block fade-up delay-100 cursor-pointer">
+            <Link to="/signup?role=recruiter" className="group rounded-[20px] p-10 border border-page-border2 bg-page-bg2 hover:-translate-y-1 hover:border-[#b8880a] relative overflow-hidden transition-all duration-300 block fade-up delay-100 cursor-pointer">
               <div className="absolute inset-0 bg-gradient-to-br from-[#e8c87a]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               <div className="relative z-10">
                 <div className="font-serif text-5xl font-light text-page-border2 leading-none mb-6 group-hover:text-[#b8880a] transition-colors">02</div>
@@ -318,14 +318,14 @@ export function HomePage() {
           <h2 className="font-serif text-[32px] md:text-[52px] font-normal leading-[1.1] tracking-[-1.5px] text-page-text mb-4 fade-up">Your next chapter<br/>in healthcare <em className="italic text-page-accent">starts here</em></h2>
           <p className="text-base text-page-text2 mb-10 fade-up max-w-[600px] mx-auto">Whether you're a professional looking for your next opportunity or a hospital searching for exceptional talent — ReadyMD was built for you.</p>
           <div className="flex flex-wrap justify-center gap-3.5 fade-up">
-            <Link to="/role-selection" className="inline-flex items-center gap-2.5 px-7 py-3.5 rounded-xl text-[15px] font-semibold text-white bg-page-accent hover:bg-[#5a9e55] hover:-translate-y-0.5 shadow-lg shadow-page-accent/20 transition-all">
+            <Link to="/signup?role=employee" className="inline-flex items-center gap-2.5 px-7 py-3.5 rounded-xl text-[15px] font-semibold text-white bg-page-accent hover:bg-[#5a9e55] hover:-translate-y-0.5 shadow-lg shadow-page-accent/20 transition-all">
               I'm a professional
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                 <line x1="5" y1="12" x2="19" y2="12" />
                 <polyline points="12 5 19 12 12 19" />
               </svg>
             </Link>
-            <Link to="/role-selection" className="inline-flex items-center gap-2.5 px-7 py-3.5 rounded-xl text-[15px] font-medium text-page-text bg-page-surface border border-page-border2 hover:border-page-accent hover:text-page-accent hover:-translate-y-0.5 transition-all">
+            <Link to="/signup?role=recruiter" className="inline-flex items-center gap-2.5 px-7 py-3.5 rounded-xl text-[15px] font-medium text-page-text bg-page-surface border border-page-border2 hover:border-page-accent hover:text-page-accent hover:-translate-y-0.5 transition-all">
               I'm hiring talent
             </Link>
           </div>

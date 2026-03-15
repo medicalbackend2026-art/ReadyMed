@@ -38,7 +38,7 @@ export function FormInput({
   )
 }
 
-export function FormSelect({ label, hint, id, children, className = '', ...props }) {
+export function FormSelect({ label, hint, id, options = [], children, className = '', ...props }) {
   const inputId = id || Math.random().toString(36).substr(2, 9)
   
   return (
@@ -50,7 +50,12 @@ export function FormSelect({ label, hint, id, children, className = '', ...props
         style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%235F5E5A' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")` }}
         {...props}
       >
-        {children}
+        {options.length > 0
+          ? options.map(opt => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))
+          : children
+        }
       </select>
       {hint && <div className="text-[12px] text-gray-400 mt-1">{hint}</div>}
     </div>

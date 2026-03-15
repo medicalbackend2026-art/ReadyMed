@@ -48,15 +48,16 @@ export function clearUserProfile() {
 
 export function getProfileCompletion(profile) {
   if (!profile) return 0
-  let score = 0
-  if (profile.profession) score += 20
-  if (profile.experiences?.length > 0 && profile.experiences[0].jobTitle) score += 15
-  if (profile.qualifications?.length > 0 && profile.qualifications[0].degree) score += 15
-  if (profile.skills?.length > 0) score += 10
-  if (profile.currentSalary || profile.expectedSalary) score += 10
-  if (profile.photo) score += 15
-  if (profile.resumeFilename) score += 15
-  return Math.min(score, 100)
+  const checks = [
+    !!profile.profession,
+    !!(profile.experiences?.length > 0 && profile.experiences[0].jobTitle),
+    !!(profile.qualifications?.length > 0 && profile.qualifications[0].degree),
+    !!(profile.certifications?.length > 0 && profile.certifications[0].regNumber),
+    !!(profile.skills?.length > 0),
+    !!(profile.currentSalary || profile.expectedSalary),
+    !!(profile.photo || profile.resumeFilename),
+  ]
+  return Math.round((checks.filter(Boolean).length / 7) * 100)
 }
 
 export function getCompanyCompletion(company) {
@@ -66,8 +67,7 @@ export function getCompanyCompletion(company) {
   if (company.orgType) score += 15
   if (company.description) score += 20
   if (company.contactName) score += 20
-  if (company.logo) score += 10
-  if (company.regCert) score += 10
+  if (company.logo) score += 20
   return Math.min(score, 100)
 }
 

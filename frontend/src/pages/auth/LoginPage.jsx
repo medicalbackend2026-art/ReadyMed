@@ -36,7 +36,7 @@ export function LoginPage() {
         })
       }
       const profile = getUserProfile()
-      const isComplete = getProfileCompletion(profile) >= 100
+      const isComplete = getProfileCompletion(profile) >= 75
       navigate(isComplete ? '/dashboard' : '/profile-setup')
     }
   }

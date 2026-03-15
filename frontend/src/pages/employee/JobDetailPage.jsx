@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import { Badge } from '../../components/Badge'
 import { Button } from '../../components/Button'
@@ -10,15 +10,23 @@ import { useAppContext } from '../../context/AppContext'
 // Custom Modal Component for Apply
 function ApplyModal({ isOpen, onClose, job, currentUser, onApply }) {
   const [showToast, setShowToast] = useState(false)
+  const [coverNote, setCoverNote] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [trackingId, setTrackingId] = useState('')
 
   if (!isOpen && !showToast) return null
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    onApply(job.id)
-    onClose()
-    setShowToast(true)
-    setTimeout(() => setShowToast(false), 4000)
+    setSubmitting(true)
+    const success = await onApply(job.id, { applicantName: currentUser?.name, coverNote })
+    setSubmitting(false)
+    if (success !== false) {
+      setTrackingId(`RMD-${Math.floor(Math.random() * 1000000)}`)
+      onClose()
+      setShowToast(true)
+      setTimeout(() => setShowToast(false), 4000)
+    }
   }
 
   return (
@@ -43,6 +51,8 @@ function ApplyModal({ isOpen, onClose, job, currentUser, onApply }) {
             <textarea 
               className="w-full px-3.5 py-2.5 border border-border rounded-lg text-sm text-gray-900 bg-white transition-all outline-none focus:border-teal-200 focus:ring-3 focus:ring-teal-200/20 placeholder:text-gray-400" 
               rows="3" 
+              value={coverNote}
+              onChange={e => setCoverNote(e.target.value)}
               placeholder="Add a brief note explaining why you're a good fit for this role..."
             ></textarea>
           </div>
@@ -53,15 +63,17 @@ function ApplyModal({ isOpen, onClose, job, currentUser, onApply }) {
           </div>
 
           <div className="flex gap-2.5">
-            <Button variant="ghost" type="button" onClick={onClose}>Cancel</Button>
-            <Button variant="primary" size="lg" className="flex-1" onClick={handleSubmit}>Submit application &rarr;</Button>
+            <Button variant="ghost" type="button" onClick={onClose} disabled={submitting}>Cancel</Button>
+            <Button variant="primary" size="lg" className="flex-1" onClick={handleSubmit} disabled={submitting}>
+              {submitting ? 'Submitting…' : 'Submit application →'}
+            </Button>
           </div>
         </div>
       </div>
 
       {showToast && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-teal-700 text-white px-6 py-3.5 rounded-xl text-sm font-medium shadow-lg z-[600] flex items-center gap-2 animate-[pulse-dot_0.3s_ease-out]">
-          ✓ Application submitted! Tracking ID: #RMD-{Math.floor(Math.random() * 1000000)}
+          ✓ Application submitted! Tracking ID: #{trackingId}
         </div>
       )}
     </>
@@ -71,17 +83,41 @@ function ApplyModal({ isOpen, onClose, job, currentUser, onApply }) {
 export function JobDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { browseJobs: jobs, applications, applyForJob, currentUser } = useAppContext()
+  const { browseJobs: jobs, myApplications, applyForJob, currentUser, toggleSaveJob, isJobSaved } = useAppContext()
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [isSaved, setIsSaved] = useState(false)
+  const [fetchedJob, setFetchedJob] = useState(null)
+  const [loading, setLoading] = useState(true)
 
-  const job = jobs.find(j => j.id.toString() === id)
+  const jobFromContext = jobs.find(j => j.id?.toString() === id)
+
+  useEffect(() => {
+    if (jobFromContext) {
+      setLoading(false)
+      return
+    }
+    setLoading(true)
+    fetch(`http://localhost:5000/api/jobs/${id}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data?.job) setFetchedJob(data.job) })
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [id, jobFromContext])
+
+  const job = jobFromContext || fetchedJob
 
   // Check if current user has already applied for this role
-  const hasApplied = applications.some(app => 
-    (app.candidateName === currentUser?.name || app.candidateName.includes('Sneha')) && 
-    app.jobTitle === job?.title
-  )
+  const hasApplied = !!(job && myApplications.some(app =>
+    String(app.jobId) === String(job.id) ||
+    (app.jobTitle === job.title && (app.applicantUid || app.candidateName) === (currentUser?.uid || currentUser?.name))
+  ))
+
+  if (loading) {
+    return (
+      <div className="max-w-[920px] mx-auto px-6 py-20 text-center font-sans">
+        <div className="text-gray-400 text-sm animate-pulse">Loading job details…</div>
+      </div>
+    )
+  }
 
   if (!job) {
     return (
@@ -93,14 +129,14 @@ export function JobDetailPage() {
     )
   }
 
-  // Helper to generate a dummy initials logo
   const getLogoStyle = (hospitalName) => {
-    const initials = hospitalName.substring(0, 2).toUpperCase()
-    const colorOptions = ['teal', 'blue', 'amber', 'pink', 'coral', 'purple']
-    const color = colorOptions[hospitalName.length % colorOptions.length]
+    const name = hospitalName || 'XX'
+    const initials = name.substring(0, 2).toUpperCase()
+    const colorOptions = ['teal', 'blue', 'amber', 'pink', 'purple']
+    const color = colorOptions[name.length % colorOptions.length]
     return { initials, color }
   }
-  const logo = getLogoStyle(job.hospital)
+  const logo = getLogoStyle(job?.hospital)
 
   return (
     <div className="max-w-[920px] mx-auto px-6 py-8 pb-20 font-sans">
@@ -139,8 +175,8 @@ export function JobDetailPage() {
         ) : (
           <Button variant="primary" size="lg" onClick={() => setIsModalOpen(true)}>Apply now</Button>
         )}
-        <Button variant="secondary" onClick={() => setIsSaved(!isSaved)}>
-          {isSaved ? '★ Saved' : '☆ Save job'}
+        <Button variant="secondary" onClick={() => toggleSaveJob(job)}>
+          {isJobSaved(job.id) ? '★ Saved' : '☆ Save job'}
         </Button>
         <Button variant="ghost">Share</Button>
       </div>

@@ -1,9 +1,10 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Button } from '../../components/Button'
 import { FormInput, FormSelect } from '../../components/FormElements'
 import { useAppContext } from '../../context/AppContext'
 import { getCompanyProfile } from '../../hooks/useUserProfile'
+import { auth } from '../../firebase'
 
 function StepCard({ id, num, title, desc, children }) {
   return (
@@ -24,25 +25,29 @@ function StepCard({ id, num, title, desc, children }) {
 
 export function PostJobPage() {
   const navigate = useNavigate()
-  const { addJob } = useAppContext()
+  const [searchParams] = useSearchParams()
+  const editId = searchParams.get('edit')
+  const { addJob, jobs, removeJob } = useAppContext()
   const company = getCompanyProfile() || {}
 
-  const [title, setTitle] = useState('')
-  const [profession, setProfession] = useState('Doctor')
-  const [department, setDepartment] = useState('')
-  const [employmentType, setEmploymentType] = useState('Full-time')
-  const [openings, setOpenings] = useState('1')
-  const [location, setLocation] = useState(company.city || '')
-  const [experience, setExperience] = useState('')
-  const [qualification, setQualification] = useState('')
-  const [certs, setCerts] = useState('')
-  const [skills, setSkills] = useState([])
-  const [salaryMin, setSalaryMin] = useState('')
-  const [salaryMax, setSalaryMax] = useState('')
-  const [notice, setNotice] = useState('30')
-  const [description, setDescription] = useState('')
-  const [benefits, setBenefits] = useState('')
-  const [deadline, setDeadline] = useState('')
+  const editJob = editId ? jobs.find(j => j.id === editId || j.id === Number(editId)) : null
+
+  const [title, setTitle] = useState(editJob?.title || '')
+  const [profession, setProfession] = useState(editJob?.profession || 'Doctor')
+  const [department, setDepartment] = useState(editJob?.department || '')
+  const [employmentType, setEmploymentType] = useState(editJob?.type || 'Full-time')
+  const [openings, setOpenings] = useState(editJob?.openings || '1')
+  const [location, setLocation] = useState(editJob?.location || company.city || '')
+  const [experience, setExperience] = useState(editJob?.experience || '')
+  const [qualification, setQualification] = useState(editJob?.qualification || '')
+  const [certs, setCerts] = useState(editJob?.certs || '')
+  const [skills, setSkills] = useState(editJob?.skills || [])
+  const [salaryMin, setSalaryMin] = useState(editJob?.salaryMin || '')
+  const [salaryMax, setSalaryMax] = useState(editJob?.salaryMax || '')
+  const [notice, setNotice] = useState(editJob?.notice || '30')
+  const [description, setDescription] = useState(editJob?.description || '')
+  const [benefits, setBenefits] = useState(editJob?.benefits || '')
+  const [deadline, setDeadline] = useState(editJob?.deadline || '')
 
   const availableSkills = [
     'Internal Medicine', 'ICU / Critical Care', 'Emergency Medicine',
@@ -54,37 +59,113 @@ export function PostJobPage() {
     setSkills(prev => prev.includes(skill) ? prev.filter(s => s !== skill) : [...prev, skill])
   }
 
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    const minNum = parseInt(salaryMin.replace(/,/g, '')) || 0
-    const maxNum = parseInt(salaryMax.replace(/,/g, '')) || 0
+  const [saving, setSaving] = useState(false)
+  const [savingDraft, setSavingDraft] = useState(false)
+  const [saveError, setSaveError] = useState('')
+
+  const buildJobData = (status = 'active') => {
+    const minNum = parseInt(String(salaryMin).replace(/,/g, '')) || 0
+    const maxNum = parseInt(String(salaryMax).replace(/,/g, '')) || 0
     const salaryStr = minNum && maxNum
       ? `₹${(minNum / 100000).toFixed(0)}L - ₹${(maxNum / 100000).toFixed(0)}L / year`
       : salaryMin || 'Negotiable'
-
-    addJob({
+    return {
+      ...(editJob || {}),
       title,
-      hospital: company.companyName || 'Your Company',
-      location,
+      profession,
+      department,
       type: employmentType,
+      employmentType,
+      openings: parseInt(openings) || 1,
+      location,
+      experience,
+      qualification,
+      certs,
+      skills,
+      salaryMin: minNum,
+      salaryMax: maxNum,
       salary: salaryStr,
-      specialisation: department,
+      notice,
       description,
+      benefits,
+      deadline,
+      status,
+      paused: status === 'draft',
+      hospital: company.companyName || 'Your Company',
+      specialisation: department,
       requirements: [
         qualification,
         experience ? `Minimum ${experience} years of experience` : '',
         certs,
       ].filter(Boolean),
-    })
-    navigate('/recruiter/dashboard')
+      createdAt: editJob?.createdAt || new Date().toISOString(),
+    }
+  }
+
+  const handleSaveDraft = async () => {
+    setSaveError('')
+    const jobData = buildJobData('draft')
+    if (editJob) removeJob(editJob.id)
+    addJob(jobData)
+    setSavingDraft(true)
+    try {
+      const token = await auth.currentUser?.getIdToken()
+      if (token) {
+        const url = editJob ? `http://localhost:5000/api/jobs/${editJob.id}` : 'http://localhost:5000/api/jobs'
+        const method = editJob ? 'PUT' : 'POST'
+        await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify(jobData),
+        })
+      }
+      navigate('/recruiter/dashboard')
+    } catch {
+      setTimeout(() => navigate('/recruiter/dashboard'), 1500)
+    } finally {
+      setSavingDraft(false)
+    }
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setSaveError('')
+    const jobData = buildJobData('active')
+
+    // If editing, remove old entry then add updated
+    if (editJob) removeJob(editJob.id)
+    addJob(jobData)
+
+    // Sync to Firestore via backend
+    setSaving(true)
+    try {
+      const token = await auth.currentUser?.getIdToken()
+      if (token) {
+        const url = editJob ? `http://localhost:5000/api/jobs/${editJob.id}` : 'http://localhost:5000/api/jobs'
+        const method = editJob ? 'PUT' : 'POST'
+        const res = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify(jobData),
+        })
+        if (!res.ok) { const err = await res.json(); throw new Error(err.error || 'Save failed') }
+      }
+      navigate('/recruiter/dashboard')
+    } catch (err) {
+      console.error('Job sync error:', err)
+      setSaveError('Job posted locally but could not sync to cloud.')
+      setTimeout(() => navigate('/recruiter/dashboard'), 2000)
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
     <div className="max-w-[720px] mx-auto px-6 py-10 pb-20 font-sans">
 
       <div className="text-center mb-9">
-        <h1 className="font-serif text-[28px] text-gray-900 mb-1.5">Post a new job</h1>
-        <p className="text-sm text-gray-500">Create your listing in 3 simple steps. Published jobs are instantly visible to matched candidates.</p>
+        <h1 className="font-serif text-[28px] text-gray-900 mb-1.5">{editJob ? 'Edit job post' : 'Post a new job'}</h1>
+        <p className="text-sm text-gray-500">{editJob ? 'Update the details of your job listing.' : 'Create your listing in 3 simple steps. Published jobs are instantly visible to matched candidates.'}</p>
       </div>
 
       <form onSubmit={handleSubmit}>
@@ -208,10 +289,15 @@ export function PostJobPage() {
 
         {/* Actions */}
         <div className="flex flex-col-reverse sm:flex-row justify-between items-center mt-7 gap-4">
-          <Button type="button" variant="ghost">Save as draft</Button>
+          {saveError && <p className="text-sm text-amber-600">{saveError}</p>}
+          <Button type="button" variant="ghost" onClick={handleSaveDraft} disabled={savingDraft}>
+            {savingDraft ? 'Saving…' : 'Save as draft'}
+          </Button>
           <div className="flex gap-2.5 w-full sm:w-auto">
             <Button type="button" variant="ghost" to="/recruiter/dashboard" className="flex-1 sm:flex-none">Cancel</Button>
-            <Button type="submit" variant="blue" size="lg" className="flex-1 sm:flex-none">Publish job →</Button>
+            <Button type="submit" variant="blue" size="lg" className="flex-1 sm:flex-none" disabled={saving}>
+              {saving ? (editJob ? 'Saving…' : 'Publishing…') : (editJob ? 'Save changes →' : 'Publish job →')}
+            </Button>
           </div>
         </div>
 

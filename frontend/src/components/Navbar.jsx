@@ -52,9 +52,6 @@ export function Navbar({ variant = 'public' }) {
             <Link to="/jobs" className={getLinkClass('/jobs')}>Find Jobs</Link>
           </div>
           <div className="flex items-center gap-3">
-            <button className="relative w-8 h-8 rounded-full border border-border flex items-center justify-center text-gray-500 hover:bg-gray-50 transition-colors">
-              🔔<span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-coral-200 border-2 border-white"></span>
-            </button>
             <div className="relative" ref={avatarRef}>
               <button
                 onClick={() => setAvatarOpen(o => !o)}
@@ -104,7 +101,6 @@ export function Navbar({ variant = 'public' }) {
           </div>
           <div className="flex items-center gap-3">
             <Link to="/recruiter/post-job" className="px-4 py-[7px] text-[13px] font-semibold rounded-lg bg-teal-700 text-white hover:bg-teal-800 transition-colors">Post Job</Link>
-            <button className="w-8 h-8 rounded-full border border-border flex items-center justify-center text-gray-500 hover:bg-gray-50">🔔</button>
             <div className="relative" ref={avatarRef}>
               <button
                 onClick={() => setAvatarOpen(o => !o)}

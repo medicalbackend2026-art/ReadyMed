@@ -96,7 +96,7 @@ export function JobDetailPage() {
       return
     }
     setLoading(true)
-    fetch(`http://localhost:5000/api/jobs/${id}`)
+    fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/jobs/${id}`)
       .then(r => r.ok ? r.json() : null)
       .then(data => { if (data?.job) setFetchedJob(data.job) })
       .catch(() => {})

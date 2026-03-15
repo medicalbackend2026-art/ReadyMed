@@ -6,6 +6,8 @@ import { useAppContext } from '../../context/AppContext'
 import { getCompanyProfile } from '../../hooks/useUserProfile'
 import { auth } from '../../firebase'
 
+const API = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+
 function StepCard({ id, num, title, desc, children }) {
   return (
     <div id={id} className="bg-white border border-border rounded-2xl p-7 mb-5">
@@ -111,7 +113,7 @@ export function PostJobPage() {
     try {
       const token = await auth.currentUser?.getIdToken()
       if (token) {
-        const url = editJob ? `http://localhost:5000/api/jobs/${editJob.id}` : 'http://localhost:5000/api/jobs'
+        const url = editJob ? `${API}/api/jobs/${editJob.id}` : `${API}/api/jobs`
         const method = editJob ? 'PUT' : 'POST'
         await fetch(url, {
           method,
@@ -141,7 +143,7 @@ export function PostJobPage() {
     try {
       const token = await auth.currentUser?.getIdToken()
       if (token) {
-        const url = editJob ? `http://localhost:5000/api/jobs/${editJob.id}` : 'http://localhost:5000/api/jobs'
+        const url = editJob ? `${API}/api/jobs/${editJob.id}` : `${API}/api/jobs`
         const method = editJob ? 'PUT' : 'POST'
         const res = await fetch(url, {
           method,

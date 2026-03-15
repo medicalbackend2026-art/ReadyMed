@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useAppContext } from '../../context/AppContext'
 import { auth } from '../../firebase'
 
-const API = 'http://localhost:5000'
+const API = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
 const STAGES = ['New', 'Reviewed', 'Shortlisted', 'Interviewing', 'Offer sent', 'Rejected']
 

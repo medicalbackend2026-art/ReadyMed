@@ -5,7 +5,7 @@ import { useAppContext } from '../../context/AppContext'
 import { getUserProfile, getProfileCompletion } from '../../hooks/useUserProfile'
 
 export function DashboardPage() {
-  const { myApplications, currentUser, loadMyApplications, savedJobs, toggleSaveJob, browseJobs } = useAppContext()
+  const { myApplications, currentUser, loadMyApplications, savedJobs, toggleSaveJob, browseJobs, jobsLoading } = useAppContext()
 
   useEffect(() => { loadMyApplications() }, [])
 
@@ -161,8 +161,10 @@ export function DashboardPage() {
               <Link to="/jobs" className="text-[13px] font-medium text-teal-600 hover:underline">Browse all &rarr;</Link>
             </div>
             <div className="divide-y divide-border">
-              {recommendedJobs.length === 0 ? (
-                <div className="px-5 py-8 text-center text-sm text-gray-500">You've applied to all available jobs! <Link to="/jobs" className="text-teal-600 hover:underline font-medium">Browse more →</Link></div>
+              {jobsLoading ? (
+                <div className="px-5 py-8 text-center text-sm text-gray-500">Loading jobs...</div>
+              ) : recommendedJobs.length === 0 ? (
+                <div className="px-5 py-8 text-center text-sm text-gray-500">No jobs available right now. <Link to="/jobs" className="text-teal-600 hover:underline font-medium">Browse all →</Link></div>
               ) : recommendedJobs.map(job => {
                 const initials = job.hospital?.substring(0, 2).toUpperCase() || '??'
                 const colors = ['purple', 'green', 'blue', 'teal', 'amber']

@@ -3,7 +3,7 @@ import { Badge } from '../../components/Badge'
 import { useAppContext } from '../../context/AppContext'
 
 export function ManageApplicationsPage() {
-  const { applications, jobs, updateApplicationStatus } = useAppContext()
+  const { applications, updateApplicationStatus } = useAppContext()
   const [selectedJob, setSelectedJob] = useState(null)
 
   // Get unique jobs that have applications

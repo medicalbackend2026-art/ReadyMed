@@ -2,21 +2,17 @@ import React from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '../../components/Button'
 import { useAppContext } from '../../context/AppContext'
+import { getUserProfile, getProfileCompletion } from '../../hooks/useUserProfile'
 
 export function DashboardPage() {
   const { applications, currentUser } = useAppContext()
-  
-  const [completionPercentage, setCompletionPercentage] = React.useState(85)
 
-  React.useEffect(() => {
-    const hasPhoto = !!localStorage.getItem('mockProfilePhoto')
-    const hasResume = !!localStorage.getItem('mockResumeFilename')
-    setCompletionPercentage((hasPhoto ? 7 : 0) + (hasResume ? 8 : 0) + 85)
-  }, [])
+  const profile = getUserProfile()
+  const completionPercentage = getProfileCompletion(profile)
+  const displayName = profile?.name || currentUser?.name || 'there'
 
-  // Filter context applications for the mock current user (Dr. Sneha)
-  const myApplications = applications.filter(app => 
-    app.candidateName.includes('Sneha') || app.candidateName === currentUser?.name
+  const myApplications = applications.filter(app =>
+    app.candidateName === displayName || app.candidateName.includes(displayName.split(' ')[0])
   )
 
   const getStatusColor = (status) => {
@@ -37,28 +33,28 @@ export function DashboardPage() {
       {/* Welcome Header */}
       <div className="flex justify-between items-center mb-7">
         <div>
-          <h1 className="font-serif text-[26px] text-gray-900 mb-1">Welcome back, {currentUser?.name}</h1>
+          <h1 className="font-serif text-[26px] text-gray-900 mb-1">Welcome back, {displayName}</h1>
           <div className="text-sm text-gray-500">Here's what's happening with your job search today.</div>
         </div>
         <Button to="/profile-setup" variant="secondary" size="sm">Edit profile</Button>
       </div>
 
-      {/* Profile Completion Banner */}
-      <div className="bg-gradient-to-br from-teal-50 to-green-50 border border-teal-100 rounded-[14px] p-5 md:p-6 flex flex-col md:flex-row items-center gap-[18px] mb-7">
-        <div className="font-serif text-[36px] text-teal-700 leading-none">{completionPercentage}%</div>
-        <div className="flex-1 w-full text-center md:text-left">
-          <div className="text-sm font-semibold text-teal-700 mb-1.5">Profile completion</div>
-          <div className="h-1.5 w-full bg-teal-100 rounded-full mb-1 overflow-hidden">
-            <div className="h-full bg-teal-600 rounded-full transition-all duration-500" style={{ width: `${completionPercentage}%` }}></div>
+      {/* Profile Completion Banner — only shown when profile is incomplete */}
+      {completionPercentage < 100 && (
+        <div className="bg-gradient-to-br from-teal-50 to-green-50 border border-teal-100 rounded-[14px] p-5 md:p-6 flex flex-col md:flex-row items-center gap-[18px] mb-7">
+          <div className="font-serif text-[36px] text-teal-700 leading-none">{completionPercentage}%</div>
+          <div className="flex-1 w-full text-center md:text-left">
+            <div className="text-sm font-semibold text-teal-700 mb-1.5">Profile completion</div>
+            <div className="h-1.5 w-full bg-teal-100 rounded-full mb-1 overflow-hidden">
+              <div className="h-full bg-teal-600 rounded-full transition-all duration-500" style={{ width: `${completionPercentage}%` }}></div>
+            </div>
+            <div className="text-xs text-teal-600">
+              Upload a photo and resume to reach 100% — complete profiles get 3× more views.
+            </div>
           </div>
-          <div className="text-xs text-teal-600">
-            {completionPercentage === 100 
-              ? 'Your profile is fully complete! Great job.' 
-              : 'Upload a photo and resume to reach 100% — complete profiles get 3× more views.'}
-          </div>
+          <Button to="/profile-setup#step6" variant="primary" size="sm" className="w-full md:w-auto shrink-0">Complete profile &rarr;</Button>
         </div>
-        <Button to="/profile-setup#step6" variant="primary" size="sm" className="w-full md:w-auto">Complete profile &rarr;</Button>
-      </div>
+      )}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5 mb-7">

@@ -5,7 +5,7 @@ import { Button } from '../../components/Button'
 import { useAppContext } from '../../context/AppContext'
 
 export function JobFeedPage() {
-  const { jobs } = useAppContext()
+  const { browseJobs: jobs } = useAppContext()
   const [searchTerm, setSearchTerm] = useState('')
   const [filters, setFilters] = useState({
     profession: [],

@@ -1,8 +1,37 @@
-import React from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { useState, useRef, useEffect } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { getUserProfile, getInitials, clearUserProfile } from '../hooks/useUserProfile'
 
 export function Navbar({ variant = 'public' }) {
   const location = useLocation()
+  const navigate = useNavigate()
+  const [avatarOpen, setAvatarOpen] = useState(false)
+  const avatarRef = useRef(null)
+  const [profile, setProfile] = useState(() => getUserProfile())
+
+  // Re-read profile when dropdown opens so initials/photo stay fresh
+  useEffect(() => {
+    if (avatarOpen) setProfile(getUserProfile())
+  }, [avatarOpen])
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (avatarRef.current && !avatarRef.current.contains(e.target)) {
+        setAvatarOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  const handleLogout = () => {
+    clearUserProfile()
+    setAvatarOpen(false)
+    navigate('/login')
+  }
+
+  const initials = getInitials(profile?.name)
+  const avatarPhoto = profile?.photo
   
   const getLinkClass = (path) => {
     const isActive = location.pathname.startsWith(path)
@@ -19,14 +48,42 @@ export function Navbar({ variant = 'public' }) {
             Ready<span className="text-teal-200">MD</span>
           </Link>
           <div className="flex items-center gap-1.5">
-            <Link to="/jobs" className={getLinkClass('/jobs')}>Find Jobs</Link>
             <Link to="/dashboard" className={getLinkClass('/dashboard')}>Dashboard</Link>
+            <Link to="/jobs" className={getLinkClass('/jobs')}>Find Jobs</Link>
           </div>
           <div className="flex items-center gap-3">
             <button className="relative w-8 h-8 rounded-full border border-border flex items-center justify-center text-gray-500 hover:bg-gray-50 transition-colors">
               🔔<span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-coral-200 border-2 border-white"></span>
             </button>
-            <div className="w-[34px] h-[34px] rounded-full bg-teal-100 text-teal-700 flex items-center justify-center text-sm font-semibold">SK</div>
+            <div className="relative" ref={avatarRef}>
+              <button
+                onClick={() => setAvatarOpen(o => !o)}
+                className="w-[34px] h-[34px] rounded-full bg-teal-100 text-teal-700 flex items-center justify-center text-sm font-semibold hover:ring-2 hover:ring-teal-300 transition-all overflow-hidden"
+              >
+                {avatarPhoto
+                  ? <img src={avatarPhoto} alt="avatar" className="w-full h-full object-cover" />
+                  : initials
+                }
+              </button>
+              {avatarOpen && (
+                <div className="absolute right-0 top-[42px] w-44 bg-white border border-border rounded-xl shadow-lg py-1 z-50">
+                  <Link
+                    to="/profile-setup"
+                    onClick={() => setAvatarOpen(false)}
+                    className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    <span></span> Profile
+                  </Link>
+                  <div className="my-1 border-t border-border" />
+                  <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors"
+                  >
+                    <span></span> Log out
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </nav>
@@ -48,7 +105,35 @@ export function Navbar({ variant = 'public' }) {
           <div className="flex items-center gap-3">
             <Link to="/recruiter/post-job" className="px-4 py-[7px] text-[13px] font-semibold rounded-lg bg-teal-700 text-white hover:bg-teal-800 transition-colors">Post Job</Link>
             <button className="w-8 h-8 rounded-full border border-border flex items-center justify-center text-gray-500 hover:bg-gray-50">🔔</button>
-            <div className="w-[34px] h-[34px] rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-sm font-semibold">HR</div>
+            <div className="relative" ref={avatarRef}>
+              <button
+                onClick={() => setAvatarOpen(o => !o)}
+                className="w-[34px] h-[34px] rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-sm font-semibold hover:ring-2 hover:ring-blue-300 transition-all overflow-hidden"
+              >
+                {avatarPhoto
+                  ? <img src={avatarPhoto} alt="avatar" className="w-full h-full object-cover" />
+                  : initials
+                }
+              </button>
+              {avatarOpen && (
+                <div className="absolute right-0 top-[42px] w-48 bg-white border border-border rounded-xl shadow-lg py-1 z-50">
+                  <Link
+                    to="/recruiter/company-setup"
+                    onClick={() => setAvatarOpen(false)}
+                    className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    <span>🏢</span> Company Profile
+                  </Link>
+                  <div className="my-1 border-t border-border" />
+                  <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors"
+                  >
+                    <span>🚪</span> Log out
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </nav>

@@ -71,7 +71,7 @@ function ApplyModal({ isOpen, onClose, job, currentUser, onApply }) {
 export function JobDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { jobs, applications, applyForJob, currentUser } = useAppContext()
+  const { browseJobs: jobs, applications, applyForJob, currentUser } = useAppContext()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isSaved, setIsSaved] = useState(false)
 

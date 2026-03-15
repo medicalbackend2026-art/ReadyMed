@@ -1,7 +1,9 @@
-import React, { useState, useRef, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useState, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Button } from '../../components/Button'
 import { FormInput, FormSelect } from '../../components/FormElements'
+import { getUserProfile, saveUserProfile, getProfileCompletion } from '../../hooks/useUserProfile'
+import { registerAsCandidate } from '../../context/AppContext'
 
 // Helper component for steps
 function StepCard({ id, num, title, desc, required = false, children, color = 'coral' }) {
@@ -30,45 +32,31 @@ function StepCard({ id, num, title, desc, required = false, children, color = 'c
 
 export function ProfileSetupPage() {
   const navigate = useNavigate()
-  const [selectedProf, setSelectedProf] = useState('Doctor')
-  const [skills, setSkills] = useState(['Internal Medicine', 'ICU / Critical Care', 'Emergency Medicine'])
-  const [experiences, setExperiences] = useState([{ id: 1 }])
-  const [qualifications, setQualifications] = useState([{ id: 1 }])
-  const [certifications, setCertifications] = useState([{ id: 1 }])
+  const profile = getUserProfile() || {}
 
-  const addExperience = () => setExperiences([...experiences, { id: Date.now() }])
-  const removeExperience = (id) => setExperiences(experiences.filter(exp => exp.id !== id))
+  const [selectedProf, setSelectedProf] = useState(profile.profession || '')
+  const [skills, setSkills] = useState(profile.skills || [])
+  const [experiences, setExperiences] = useState(
+    profile.experiences?.length ? profile.experiences : [{ id: 1, jobTitle: '', hospital: '', department: '', employmentType: 'Full-time', startDate: '', endDate: '', duties: '' }]
+  )
+  const [qualifications, setQualifications] = useState(
+    profile.qualifications?.length ? profile.qualifications : [{ id: 1, degree: '', institution: '', specialisation: '', yearOfPassing: '' }]
+  )
+  const [certifications, setCertifications] = useState(
+    profile.certifications?.length ? profile.certifications : [{ id: 1, licenseType: 'NMC', regNumber: '', issuingAuthority: '', validUntil: '', filename: null }]
+  )
+  const [preferredJobType, setPreferredJobType] = useState(profile.preferredJobType || 'Full-time')
+  const [preferredCity, setPreferredCity] = useState(profile.preferredCity || '')
+  const [openToRemote, setOpenToRemote] = useState(profile.openToRemote || 'No')
+  const [currentSalary, setCurrentSalary] = useState(profile.currentSalary || '')
+  const [expectedSalary, setExpectedSalary] = useState(profile.expectedSalary || '')
+  const [noticePeriod, setNoticePeriod] = useState(profile.noticePeriod || '30')
+  const [openToRelocation, setOpenToRelocation] = useState(profile.openToRelocation || 'Yes')
+  const [profilePhoto, setProfilePhoto] = useState(profile.photo || null)
+  const [resumeFilename, setResumeFilename] = useState(profile.resumeFilename || null)
 
-  const addQualification = () => setQualifications([...qualifications, { id: Date.now() }])
-  const removeQualification = (id) => setQualifications(qualifications.filter(q => q.id !== id))
-
-  const addCertification = () => setCertifications([...certifications, { id: Date.now() }])
-  const removeCertification = (id) => setCertifications(certifications.filter(c => c.id !== id))
-
-  // Photo & Resume Mock State
-  const [profilePhoto, setProfilePhoto] = useState(null)
-  const [resumeFilename, setResumeFilename] = useState(null)
-  
   const photoInputRef = useRef(null)
   const resumeInputRef = useRef(null)
-
-  useEffect(() => {
-    // Load persisted mock files
-    const savedPhoto = localStorage.getItem('mockProfilePhoto')
-    if (savedPhoto) setProfilePhoto(savedPhoto)
-
-    const savedResume = localStorage.getItem('mockResumeFilename')
-    if (savedResume) setResumeFilename(savedResume)
-
-    const savedCerts = localStorage.getItem('mockCertifications')
-    if (savedCerts) {
-      try {
-        setCertifications(JSON.parse(savedCerts))
-      } catch (e) {
-        // ignore parse error
-      }
-    }
-  }, [])
 
   const professions = [
     { icon: '🩺', name: 'Doctor' },
@@ -82,85 +70,101 @@ export function ProfileSetupPage() {
   ]
 
   const availableSkills = [
-    'Internal Medicine', 'ICU / Critical Care', 'Paediatrics', 'Emergency Medicine', 
-    'Cardiology', 'Orthopaedics', 'Neurology', 'Oncology', 'Dermatology', 
+    'Internal Medicine', 'ICU / Critical Care', 'Paediatrics', 'Emergency Medicine',
+    'Cardiology', 'Orthopaedics', 'Neurology', 'Oncology', 'Dermatology',
     'OT Assist', 'Gynaecology', 'Radiology'
   ]
 
   const toggleSkill = (skill) => {
-    if (skills.includes(skill)) {
-      setSkills(skills.filter(s => s !== skill))
-    } else {
-      setSkills([...skills, skill])
-    }
+    setSkills(prev => prev.includes(skill) ? prev.filter(s => s !== skill) : [...prev, skill])
   }
+
+  // Experience helpers
+  const addExperience = () => setExperiences(prev => [...prev, { id: Date.now(), jobTitle: '', hospital: '', department: '', employmentType: 'Full-time', startDate: '', endDate: '', duties: '' }])
+  const removeExperience = (id) => setExperiences(prev => prev.filter(e => e.id !== id))
+  const updateExperience = (id, field, value) => setExperiences(prev => prev.map(e => e.id === id ? { ...e, [field]: value } : e))
+
+  // Qualification helpers
+  const addQualification = () => setQualifications(prev => [...prev, { id: Date.now(), degree: '', institution: '', specialisation: '', yearOfPassing: '' }])
+  const removeQualification = (id) => setQualifications(prev => prev.filter(q => q.id !== id))
+  const updateQualification = (id, field, value) => setQualifications(prev => prev.map(q => q.id === id ? { ...q, [field]: value } : q))
+
+  // Certification helpers
+  const addCertification = () => setCertifications(prev => [...prev, { id: Date.now(), licenseType: 'NMC', regNumber: '', issuingAuthority: '', validUntil: '', filename: null }])
+  const removeCertification = (id) => setCertifications(prev => prev.filter(c => c.id !== id))
+  const updateCertification = (id, field, value) => setCertifications(prev => prev.map(c => c.id === id ? { ...c, [field]: value } : c))
 
   const handlePhotoUpload = (e) => {
     const file = e.target.files?.[0]
     if (file) {
       const reader = new FileReader()
       reader.onloadend = () => {
-        const dataUrl = reader.result
-        setProfilePhoto(dataUrl)
-        localStorage.setItem('mockProfilePhoto', dataUrl)
+        setProfilePhoto(reader.result)
+        saveUserProfile({ photo: reader.result })
       }
       reader.readAsDataURL(file)
-    }
-  }
-
-  const handleResumeUpload = (e) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      setResumeFilename(file.name)
-      localStorage.setItem('mockResumeFilename', file.name)
-      // We could store the file data contents here if we needed to actually view the CV later
-      // For now, storing the filename gives adequate feedback to the user that it uploaded
     }
   }
 
   const handleRemovePhoto = (e) => {
     e.stopPropagation()
     setProfilePhoto(null)
-    localStorage.removeItem('mockProfilePhoto')
+    saveUserProfile({ photo: null })
+  }
+
+  const handleResumeUpload = (e) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setResumeFilename(file.name)
+      saveUserProfile({ resumeFilename: file.name })
+    }
   }
 
   const handleRemoveResume = (e) => {
     e.stopPropagation()
     setResumeFilename(null)
-    localStorage.removeItem('mockResumeFilename')
+    saveUserProfile({ resumeFilename: null })
     if (resumeInputRef.current) resumeInputRef.current.value = ''
   }
 
   const handleCertificateUpload = (id, e) => {
     const file = e.target.files?.[0]
-    if (file) {
-      const newCerts = certifications.map(cert => 
-        cert.id === id ? { ...cert, filename: file.name } : cert
-      )
-      setCertifications(newCerts)
-      localStorage.setItem('mockCertifications', JSON.stringify(newCerts))
-    }
+    if (file) updateCertification(id, 'filename', file.name)
   }
 
   const removeCertificateFile = (id, e) => {
     e.stopPropagation()
-    const newCerts = certifications.map(cert => 
-      cert.id === id ? { ...cert, filename: null } : cert
-    )
-    setCertifications(newCerts)
-    localStorage.setItem('mockCertifications', JSON.stringify(newCerts))
-    // Clear input value
+    updateCertification(id, 'filename', null)
     const input = document.getElementById(`cert-upload-${id}`)
     if (input) input.value = ''
   }
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    navigate('/jobs')
+    saveUserProfile({
+      profession: selectedProf,
+      skills,
+      experiences,
+      qualifications,
+      certifications,
+      preferredJobType,
+      preferredCity,
+      openToRemote,
+      currentSalary,
+      expectedSalary,
+      noticePeriod,
+      openToRelocation,
+    })
+    navigate('/dashboard')
   }
 
-  // Calculate completion percentage mock based on whether files are attached
-  const completionPercentage = (profilePhoto ? 7 : 0) + (resumeFilename ? 8 : 0) + 85
+  const currentProfile = {
+    profession: selectedProf, skills, experiences, qualifications,
+    certifications, preferredJobType, preferredCity, openToRemote,
+    currentSalary, expectedSalary, noticePeriod, openToRelocation,
+    photo: profilePhoto, resumeFilename,
+  }
+  const completionPercentage = getProfileCompletion(currentProfile)
 
   return (
     <div className="max-w-[720px] mx-auto px-6 py-10 pb-20 font-sans">
@@ -220,35 +224,25 @@ export function ProfileSetupPage() {
                   <button type="button" onClick={() => removeExperience(exp.id)} className="text-xs text-gray-400 hover:text-coral-600">✕ Remove</button>
                 )}
               </div>
-              
               <div className="grid sm:grid-cols-2 gap-3">
-                <FormInput label="Job title / designation" defaultValue={index === 0 ? "Senior Resident" : ""} />
-                <FormInput label="Hospital / clinic name" defaultValue={index === 0 ? "AIIMS Delhi" : ""} />
+                <FormInput label="Job title / designation" value={exp.jobTitle} onChange={e => updateExperience(exp.id, 'jobTitle', e.target.value)} />
+                <FormInput label="Hospital / clinic name" value={exp.hospital} onChange={e => updateExperience(exp.id, 'hospital', e.target.value)} />
               </div>
-              
               <div className="grid sm:grid-cols-2 gap-3">
-                <FormInput label="Department" defaultValue={index === 0 ? "Internal Medicine" : ""} />
-                <FormSelect label="Employment type" options={[{label:'Full-time',value:'Full-time'}, {label:'Part-time',value:'Part-time'}, {label:'Contract',value:'Contract'}, {label:'Locum',value:'Locum'}]} />
+                <FormInput label="Department" value={exp.department} onChange={e => updateExperience(exp.id, 'department', e.target.value)} />
+                <FormSelect label="Employment type" value={exp.employmentType} onChange={e => updateExperience(exp.id, 'employmentType', e.target.value)} options={[{label:'Full-time',value:'Full-time'},{label:'Part-time',value:'Part-time'},{label:'Contract',value:'Contract'},{label:'Locum',value:'Locum'}]} />
               </div>
-              
               <div className="grid sm:grid-cols-2 gap-3">
-                <FormInput label="Start date" type="month" defaultValue={index === 0 ? "2021-06" : ""} />
-                <FormInput label="End date" type="month" hint="Leave empty if this is your current role" />
+                <FormInput label="Start date" type="month" value={exp.startDate} onChange={e => updateExperience(exp.id, 'startDate', e.target.value)} />
+                <FormInput label="End date" type="month" value={exp.endDate} onChange={e => updateExperience(exp.id, 'endDate', e.target.value)} hint="Leave empty if this is your current role" />
               </div>
-              
               <div className="mb-0">
                 <label className="block text-[13px] font-medium text-gray-700 mb-1.5">Brief duties description</label>
-                <textarea 
-                  className="w-full px-3.5 py-2.5 border border-border rounded-lg text-sm text-gray-900 bg-white transition-all outline-none focus:border-teal-200 focus:ring-3 focus:ring-teal-200/20" 
-                  rows="2" 
-                  defaultValue={index === 0 ? "Managing patient rounds in internal medicine ward, supervising junior residents." : ""}
-                ></textarea>
+                <textarea className="w-full px-3.5 py-2.5 border border-border rounded-lg text-sm text-gray-900 bg-white transition-all outline-none focus:border-teal-200 focus:ring-3 focus:ring-teal-200/20" rows="2" value={exp.duties} onChange={e => updateExperience(exp.id, 'duties', e.target.value)} />
               </div>
             </div>
           ))}
-          <button type="button" onClick={addExperience} className="flex items-center gap-1.5 text-[13px] font-semibold text-teal-600 py-2 hover:text-teal-700">
-            + Add another experience
-          </button>
+          <button type="button" onClick={addExperience} className="flex items-center gap-1.5 text-[13px] font-semibold text-teal-600 py-2 hover:text-teal-700">+ Add another experience</button>
         </StepCard>
 
         {/* Step 2: Education */}
@@ -262,18 +256,16 @@ export function ProfileSetupPage() {
                 )}
               </div>
               <div className="grid sm:grid-cols-2 gap-3">
-                <FormInput label="Degree / diploma" defaultValue={index === 0 ? "MBBS" : ""} />
-                <FormInput label="Institution / university" defaultValue={index === 0 ? "AIIMS Delhi" : ""} />
+                <FormInput label="Degree / diploma" value={qual.degree} onChange={e => updateQualification(qual.id, 'degree', e.target.value)} />
+                <FormInput label="Institution / university" value={qual.institution} onChange={e => updateQualification(qual.id, 'institution', e.target.value)} />
               </div>
               <div className="grid sm:grid-cols-2 gap-3 [&>div]:mb-0">
-                <FormInput label="Specialisation / stream" defaultValue={index === 0 ? "General Medicine" : ""} className="mb-0" />
-                <FormInput label="Year of passing" type="number" defaultValue={index === 0 ? "2019" : ""} min="1960" max="2030" className="mb-0" />
+                <FormInput label="Specialisation / stream" value={qual.specialisation} onChange={e => updateQualification(qual.id, 'specialisation', e.target.value)} className="mb-0" />
+                <FormInput label="Year of passing" type="number" value={qual.yearOfPassing} onChange={e => updateQualification(qual.id, 'yearOfPassing', e.target.value)} min="1960" max="2030" className="mb-0" />
               </div>
             </div>
           ))}
-          <button type="button" onClick={addQualification} className="flex items-center gap-1.5 text-[13px] font-semibold text-teal-600 py-2 hover:text-teal-700">
-            + Add another qualification
-          </button>
+          <button type="button" onClick={addQualification} className="flex items-center gap-1.5 text-[13px] font-semibold text-teal-600 py-2 hover:text-teal-700">+ Add another qualification</button>
         </StepCard>
 
         {/* Step 3: Certifications */}
@@ -287,29 +279,17 @@ export function ProfileSetupPage() {
                 )}
               </div>
               <div className="grid sm:grid-cols-2 gap-3">
-                <FormSelect label="License type" options={[{label:'NMC Registration',value:'NMC'}, {label:'State Medical Council',value:'State'}, {label:'Indian Nursing Council',value:'INC'}, {label:'Other',value:'Other'}]} />
-                <FormInput label="Registration number" defaultValue={index === 0 ? "NMC/2019/74521" : ""} />
+                <FormSelect label="License type" value={cert.licenseType} onChange={e => updateCertification(cert.id, 'licenseType', e.target.value)} options={[{label:'NMC Registration',value:'NMC'},{label:'State Medical Council',value:'State'},{label:'Indian Nursing Council',value:'INC'},{label:'Other',value:'Other'}]} />
+                <FormInput label="Registration number" value={cert.regNumber} onChange={e => updateCertification(cert.id, 'regNumber', e.target.value)} />
               </div>
               <div className="grid sm:grid-cols-2 gap-3">
-                <FormInput label="Issuing authority" defaultValue={index === 0 ? "National Medical Commission" : ""} />
-                <FormInput label="Valid until" type="month" defaultValue={index === 0 ? "2029-06" : ""} />
+                <FormInput label="Issuing authority" value={cert.issuingAuthority} onChange={e => updateCertification(cert.id, 'issuingAuthority', e.target.value)} />
+                <FormInput label="Valid until" type="month" value={cert.validUntil} onChange={e => updateCertification(cert.id, 'validUntil', e.target.value)} />
               </div>
-              
               <div className="mb-0">
                 <label className="block text-[13px] font-medium text-gray-700 mb-1.5">Upload certificate (PDF or image)</label>
-                
-                <input 
-                  type="file" 
-                  accept=".pdf, image/jpeg, image/png" 
-                  className="hidden" 
-                  id={`cert-upload-${cert.id}`}
-                  onChange={(e) => handleCertificateUpload(cert.id, e)}
-                />
-
-                <div 
-                  onClick={() => document.getElementById(`cert-upload-${cert.id}`).click()}
-                  className={`border-2 ${cert.filename ? 'border-solid border-teal-200 bg-teal-50' : 'border-dashed border-border hover:border-teal-200 hover:bg-teal-50'} rounded-xl p-7 text-center cursor-pointer transition-colors relative`}
-                >
+                <input type="file" accept=".pdf, image/jpeg, image/png" className="hidden" id={`cert-upload-${cert.id}`} onChange={(e) => handleCertificateUpload(cert.id, e)} />
+                <div onClick={() => document.getElementById(`cert-upload-${cert.id}`).click()} className={`border-2 ${cert.filename ? 'border-solid border-teal-200 bg-teal-50' : 'border-dashed border-border hover:border-teal-200 hover:bg-teal-50'} rounded-xl p-7 text-center cursor-pointer transition-colors relative`}>
                   {cert.filename ? (
                     <div className="flex flex-col items-center justify-center min-h-[50px]">
                       <div className="text-sm font-semibold text-teal-700">{cert.filename}</div>
@@ -327,9 +307,7 @@ export function ProfileSetupPage() {
               </div>
             </div>
           ))}
-          <button type="button" onClick={addCertification} className="flex items-center gap-1.5 text-[13px] font-semibold text-teal-600 py-2 hover:text-teal-700">
-            + Add another certification
-          </button>
+          <button type="button" onClick={addCertification} className="flex items-center gap-1.5 text-[13px] font-semibold text-teal-600 py-2 hover:text-teal-700">+ Add another certification</button>
         </StepCard>
 
         {/* Step 4: Skills */}
@@ -338,39 +316,30 @@ export function ProfileSetupPage() {
             <label className="block text-[13px] font-medium text-gray-700 mb-2">Select your skills (choose all that apply)</label>
             <div className="flex flex-wrap gap-2">
               {availableSkills.map(skill => (
-                <button
-                  key={skill}
-                  type="button"
-                  onClick={() => toggleSkill(skill)}
-                  className={`px-3.5 py-1.5 border rounded-full text-[13px] transition-colors ${
-                    skills.includes(skill)
-                      ? 'border-teal-600 bg-teal-50 text-teal-700 font-medium'
-                      : 'border-border bg-white text-gray-700 hover:border-teal-200 hover:bg-teal-50'
-                  }`}
-                >
+                <button key={skill} type="button" onClick={() => toggleSkill(skill)} className={`px-3.5 py-1.5 border rounded-full text-[13px] transition-colors ${skills.includes(skill) ? 'border-teal-600 bg-teal-50 text-teal-700 font-medium' : 'border-border bg-white text-gray-700 hover:border-teal-200 hover:bg-teal-50'}`}>
                   {skill}
                 </button>
               ))}
             </div>
           </div>
           <div className="grid sm:grid-cols-2 gap-3 mt-3.5">
-            <FormSelect label="Preferred job type" options={[{label:'Full-time',value:'Full-time'}, {label:'Part-time',value:'Part-time'}, {label:'Contract / Locum',value:'Contract'}, {label:'Any',value:'Any'}]} />
-            <FormInput label="Preferred city" defaultValue="Mumbai" />
+            <FormSelect label="Preferred job type" value={preferredJobType} onChange={e => setPreferredJobType(e.target.value)} options={[{label:'Full-time',value:'Full-time'},{label:'Part-time',value:'Part-time'},{label:'Contract / Locum',value:'Contract'},{label:'Any',value:'Any'}]} />
+            <FormInput label="Preferred city" value={preferredCity} onChange={e => setPreferredCity(e.target.value)} />
           </div>
           <div className="mb-0 max-w-[200px]">
-            <FormSelect label="Open to remote / teleconsultation?" options={[{label:'No',value:'No'}, {label:'Yes',value:'Yes'}]} className="mb-0" />
+            <FormSelect label="Open to remote / teleconsultation?" value={openToRemote} onChange={e => setOpenToRemote(e.target.value)} options={[{label:'No',value:'No'},{label:'Yes',value:'Yes'}]} className="mb-0" />
           </div>
         </StepCard>
 
         {/* Step 5: Salary */}
         <StepCard id="step5" num="5" title="Salary & preferences" desc="Helps us match you with jobs in your salary range" color="amber">
           <div className="grid sm:grid-cols-2 gap-3">
-            <FormInput label="Current salary (₹ per year)" placeholder="e.g. 12,00,000" defaultValue="14,00,000" />
-            <FormInput label="Expected salary (₹ per year)" placeholder="e.g. 18,00,000" defaultValue="20,00,000" />
+            <FormInput label="Current salary (₹ per year)" placeholder="e.g. 12,00,000" value={currentSalary} onChange={e => setCurrentSalary(e.target.value)} />
+            <FormInput label="Expected salary (₹ per year)" placeholder="e.g. 18,00,000" value={expectedSalary} onChange={e => setExpectedSalary(e.target.value)} />
           </div>
           <div className="grid sm:grid-cols-2 gap-3 mt-1 [&>div]:mb-0">
-            <FormSelect label="Notice period" options={[{label:'Immediate',value:'0'}, {label:'15 days',value:'15'}, {label:'30 days',value:'30'}, {label:'60 days',value:'60'}]} defaultValue="30" className="mb-0" />
-            <FormSelect label="Open to relocation?" options={[{label:'Yes',value:'Yes'}, {label:'No',value:'No'}]} className="mb-0" />
+            <FormSelect label="Notice period" value={noticePeriod} onChange={e => setNoticePeriod(e.target.value)} options={[{label:'Immediate',value:'0'},{label:'15 days',value:'15'},{label:'30 days',value:'30'},{label:'60 days',value:'60'}]} className="mb-0" />
+            <FormSelect label="Open to relocation?" value={openToRelocation} onChange={e => setOpenToRelocation(e.target.value)} options={[{label:'Yes',value:'Yes'},{label:'No',value:'No'}]} className="mb-0" />
           </div>
         </StepCard>
 
@@ -443,19 +412,22 @@ export function ProfileSetupPage() {
           </div>
         </StepCard>
 
-        {/* Bottom Banner */}
-        <div className="bg-teal-50 border border-teal-100 rounded-xl p-4 md:p-5 flex items-center gap-3.5 mt-5">
-          <div className="font-serif text-[28px] text-teal-700 shrink-0">{completionPercentage}%</div>
-          <div className="flex-1 min-w-0">
-            <div className="text-[13px] text-teal-600 mb-1.5">{completionPercentage === 100 ? 'Profile fully complete! Great job.' : 'Profile completion — add photo & resume to reach 100%'}</div>
-            <div className="h-1.5 w-full bg-teal-100 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-teal-600 rounded-full transition-all duration-500"
-                style={{ width: `${completionPercentage}%` }}
-              ></div>
+        {/* Bottom Banner — only shown when profile is incomplete */}
+        {completionPercentage < 100 && (
+          <div className="bg-teal-50 border border-teal-100 rounded-xl p-4 md:p-5 flex items-center gap-3.5 mt-5">
+            <div className="font-serif text-[28px] text-teal-700 shrink-0">{completionPercentage}%</div>
+            <div className="flex-1 min-w-0">
+              <div className="text-[13px] font-semibold text-teal-700 mb-1.5">Profile completion</div>
+              <div className="h-1.5 w-full bg-teal-100 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-teal-600 rounded-full transition-all duration-500"
+                  style={{ width: `${completionPercentage}%` }}
+                ></div>
+              </div>
+              <div className="text-xs text-teal-600 mt-1">Add photo &amp; resume to reach 100%</div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Actions */}
         <div className="flex flex-col-reverse sm:flex-row justify-between items-center mt-7 gap-4">

@@ -1,9 +1,15 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 import { useAppContext } from '../../context/AppContext'
+import { getCompanyProfile } from '../../hooks/useUserProfile'
 
 export function RecruiterDashboardPage() {
   const { jobs, applications } = useAppContext()
+  const company = getCompanyProfile() || {}
+
+  const companyName = company.companyName || 'Your Company'
+  const companyCity = company.city || ''
+  const isVerified = !!company.regNumber || !!company.regCert
 
   const activeJobsCount = jobs.length
   const totalAppsCount = applications.length
@@ -32,7 +38,10 @@ export function RecruiterDashboardPage() {
       <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-7 gap-4">
         <div>
           <h1 className="font-serif text-[26px] text-gray-900 leading-tight">Recruiter Dashboard</h1>
-          <div className="text-sm text-gray-500 mt-1">Apollo Hospitals · Delhi NCR · <span className="text-green-600 font-medium">✓ Verified</span></div>
+          <div className="text-sm text-gray-500 mt-1">
+            {companyName}{companyCity ? ` · ${companyCity}` : ''}
+            {isVerified && <span className="text-green-600 font-medium"> · ✓ Verified</span>}
+          </div>
         </div>
         <Link to="/recruiter/post-job" className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-[13px] font-semibold rounded-lg transition-colors text-center inline-block">
           + Post a new job
@@ -138,7 +147,7 @@ export function RecruiterDashboardPage() {
                 <div className="text-[22px] mb-1.5">📝</div>
                 <div className="text-[13px] font-semibold text-gray-700">Post a Job</div>
               </Link>
-              <Link to="/recruiter/search" className="p-4 border border-border rounded-lg text-center hover:border-blue-200 hover:bg-blue-50 transition-all hover:shadow-sm">
+              <Link to="/recruiter/candidates" className="p-4 border border-border rounded-lg text-center hover:border-blue-200 hover:bg-blue-50 transition-all hover:shadow-sm">
                 <div className="text-[22px] mb-1.5">🔍</div>
                 <div className="text-[13px] font-semibold text-gray-700">Search Candidates</div>
               </Link>
@@ -159,39 +168,34 @@ export function RecruiterDashboardPage() {
               <div className="text-[15px] font-semibold text-gray-900">Notifications</div>
             </div>
             <div className="divide-y divide-border">
-              
-              <div className="p-4 flex gap-2.5 items-start">
-                <div className="w-2 h-2 rounded-full bg-blue-400 mt-[5px] shrink-0"></div>
-                <div>
-                  <div className="text-[13px] text-gray-700 leading-snug"><span className="font-semibold text-gray-900">Dr. Sneha Kulkarni</span> applied for Consultant — Internal Medicine.</div>
-                  <div className="text-[11px] text-gray-400 mt-0.5">1 hour ago</div>
-                </div>
-              </div>
-              
-              <div className="p-4 flex gap-2.5 items-start">
-                <div className="w-2 h-2 rounded-full bg-blue-400 mt-[5px] shrink-0"></div>
-                <div>
-                  <div className="text-[13px] text-gray-700 leading-snug"><span className="font-semibold text-gray-900">Dr. Vikram Singh</span> accepted your invite to apply.</div>
-                  <div className="text-[11px] text-gray-400 mt-0.5">3 hours ago</div>
-                </div>
-              </div>
-              
-              <div className="p-4 flex gap-2.5 items-start">
-                <div className="w-2 h-2 rounded-full bg-blue-400 mt-[5px] shrink-0"></div>
-                <div>
-                  <div className="text-[13px] text-gray-700 leading-snug">Your job post <span className="font-semibold text-gray-900">"ICU Staff Nurse"</span> expires in 3 days.</div>
-                  <div className="text-[11px] text-gray-400 mt-0.5">Yesterday</div>
-                </div>
-              </div>
-
-              <div className="p-4 flex gap-2.5 items-start">
-                <div className="w-2 h-2 rounded-full bg-gray-200 mt-[5px] shrink-0"></div>
-                <div>
-                  <div className="text-[13px] text-gray-700 leading-snug">5 new applications received this week across all listings.</div>
-                  <div className="text-[11px] text-gray-400 mt-0.5">2 days ago</div>
-                </div>
-              </div>
-
+              {applications.length === 0 && jobs.length === 0 ? (
+                <div className="px-5 py-6 text-sm text-gray-400 text-center">No notifications yet.</div>
+              ) : (
+                <>
+                  {applications.slice(0, 3).map(app => (
+                    <div key={app.id} className="p-4 flex gap-2.5 items-start">
+                      <div className="w-2 h-2 rounded-full bg-blue-400 mt-[5px] shrink-0"></div>
+                      <div>
+                        <div className="text-[13px] text-gray-700 leading-snug">
+                          <span className="font-semibold text-gray-900">{app.candidateName}</span> applied for {app.jobTitle}.
+                        </div>
+                        <div className="text-[11px] text-gray-400 mt-0.5">{app.date || 'Recently'}</div>
+                      </div>
+                    </div>
+                  ))}
+                  {applications.length > 0 && (
+                    <div className="p-4 flex gap-2.5 items-start">
+                      <div className="w-2 h-2 rounded-full bg-gray-200 mt-[5px] shrink-0"></div>
+                      <div>
+                        <div className="text-[13px] text-gray-700 leading-snug">
+                          {applications.length} application{applications.length !== 1 ? 's' : ''} received across all listings.
+                        </div>
+                        <div className="text-[11px] text-gray-400 mt-0.5">Total</div>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           </div>
 

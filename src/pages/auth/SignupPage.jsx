@@ -8,6 +8,7 @@ import {
 import { auth, googleProvider } from '../../firebase'
 import { FormInput } from '../../components/FormElements'
 import { Button } from '../../components/Button'
+import { saveUserProfile } from '../../hooks/useUserProfile'
 
 const ROLE_CONFIG = {
   employee: {
@@ -68,11 +69,20 @@ export function SignupPage() {
     setLoading(true)
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password)
-      await updateProfile(userCredential.user, {
-        displayName: `${firstName} ${lastName}`,
+      const fullName = `${firstName} ${lastName}`.trim()
+      await updateProfile(userCredential.user, { displayName: fullName })
+      // Save user data to localStorage
+      saveUserProfile({
+        name: fullName,
+        firstName,
+        lastName,
+        email,
+        phone,
+        role,
+        orgName: role === 'recruiter' ? orgName : undefined,
       })
-      // Navigate based on role
-      navigate(role === 'recruiter' ? '/recruiter/dashboard' : '/dashboard')
+      // Navigate based on role — new employee always goes to profile setup
+      navigate(role === 'recruiter' ? '/recruiter/dashboard' : '/profile-setup')
     } catch (err) {
       setError(err.message.replace('Firebase: ', '').replace(/ \(auth\/.*\)\.?/, ''))
     } finally {
@@ -84,8 +94,19 @@ export function SignupPage() {
     setError('')
     setLoading(true)
     try {
-      await signInWithPopup(auth, googleProvider)
-      navigate(role === 'recruiter' ? '/recruiter/dashboard' : '/dashboard')
+      const result = await signInWithPopup(auth, googleProvider)
+      const gUser = result.user
+      const nameParts = (gUser.displayName || '').split(' ')
+      saveUserProfile({
+        name: gUser.displayName || '',
+        firstName: nameParts[0] || '',
+        lastName: nameParts.slice(1).join(' ') || '',
+        email: gUser.email || '',
+        phone: gUser.phoneNumber || '',
+        role,
+        photo: gUser.photoURL || null,
+      })
+      navigate(role === 'recruiter' ? '/recruiter/dashboard' : '/profile-setup')
     } catch (err) {
       setError(err.message.replace('Firebase: ', '').replace(/ \(auth\/.*\)\.?/, ''))
     } finally {

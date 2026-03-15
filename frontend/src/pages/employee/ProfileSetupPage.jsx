@@ -6,6 +6,8 @@ import { getUserProfile, saveUserProfile, getProfileCompletion } from '../../hoo
 import { registerAsCandidate } from '../../context/AppContext'
 import { auth } from '../../firebase'
 
+const API = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+
 export function ProfileSetupPage() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -46,7 +48,7 @@ export function ProfileSetupPage() {
       try {
         const token = await auth.currentUser?.getIdToken()
         if (!token) { setLoadingFromCloud(false); return }
-        const res = await fetch('http://localhost:5000/api/users/profile', {
+        const res = await fetch(`${API}/api/users/profile`, {
           headers: { 'Authorization': `Bearer ${token}` }
         })
         if (!res.ok) { setLoadingFromCloud(false); return }
@@ -172,7 +174,7 @@ export function ProfileSetupPage() {
         try {
           const token = await auth.currentUser?.getIdToken()
           if (token) {
-            await fetch('http://localhost:5000/api/users/profile', {
+            await fetch(`${API}/api/users/profile`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
               body: JSON.stringify({ resumeFilename: file.name, resumeUrl: data.secure_url }),
@@ -244,7 +246,7 @@ export function ProfileSetupPage() {
     try {
       const token = await auth.currentUser?.getIdToken()
       if (token) {
-        const res = await fetch('http://localhost:5000/api/users/profile', {
+        const res = await fetch(`${API}/api/users/profile`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

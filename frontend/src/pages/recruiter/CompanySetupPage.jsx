@@ -4,6 +4,8 @@ import { FormInput, FormSelect } from '../../components/FormElements'
 import { getCompanyProfile, saveCompanyProfile, getCompanyCompletion } from '../../hooks/useUserProfile'
 import { auth } from '../../firebase'
 
+const API = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+
 export function CompanySetupPage() {
   const navigate = useNavigate()
   const saved = getCompanyProfile() || {}
@@ -34,7 +36,7 @@ export function CompanySetupPage() {
       try {
         const token = await auth.currentUser?.getIdToken()
         if (!token) { setLoadingFromCloud(false); return }
-        const res = await fetch('http://localhost:5000/api/companies/profile', {
+        const res = await fetch(`${API}/api/companies/profile`, {
           headers: { 'Authorization': `Bearer ${token}` }
         })
         if (!res.ok) { setLoadingFromCloud(false); return }
@@ -136,7 +138,7 @@ export function CompanySetupPage() {
     try {
       const token = await auth.currentUser?.getIdToken()
       if (token) {
-        const res = await fetch('http://localhost:5000/api/companies/profile', {
+        const res = await fetch(`${API}/api/companies/profile`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
           body: JSON.stringify(currentCompany),

@@ -11,7 +11,7 @@ const CANDIDATES_KEY = 'rm_candidates_pool'
 const MY_APPS_KEY = 'rm_my_applications'
 const SAVED_JOBS_KEY = 'rm_saved_jobs'
 
-const API = 'http://localhost:5000'
+const API = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
 function loadRecruiterJobs() {
   try { return JSON.parse(localStorage.getItem(RECRUITER_JOBS_KEY) || '[]') } catch { return [] }

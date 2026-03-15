@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { initialJobs } from '../data/mockData';
+
 import { getUserProfile } from '../hooks/useUserProfile';
 import { auth } from '../firebase';
 
@@ -57,7 +57,8 @@ export function registerAsCandidate(profile) {
 }
 
 export function AppProvider({ children }) {
-  const [browseJobs, setBrowseJobs] = useState(initialJobs);
+  const [browseJobs, setBrowseJobs] = useState([]);
+  const [jobsLoading, setJobsLoading] = useState(true);
   const [recruiterJobs, setRecruiterJobs] = useState(loadRecruiterJobs);
   const [candidates, setCandidates] = useState(loadCandidates);
   const [applications, setApplications] = useState(loadRecruiterApps);
@@ -81,7 +82,8 @@ export function AppProvider({ children }) {
       .then(({ jobs }) => {
         if (jobs?.length) setBrowseJobs(jobs)
       })
-      .catch(() => {}) // fallback to mock data
+      .catch(() => {})
+      .finally(() => setJobsLoading(false))
   }, [])
 
   // Load recruiter's own jobs + their applications when auth is ready
@@ -237,6 +239,7 @@ export function AppProvider({ children }) {
   const value = {
     jobs: recruiterJobs,
     browseJobs,
+    jobsLoading,
     candidates,
     applications,
     myApplications,

@@ -1,12 +1,10 @@
 import React, { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import {
-  signInWithEmailAndPassword,
-  signInWithPopup,
-} from 'firebase/auth'
+import { signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth'
 import { auth, googleProvider } from '../../firebase'
 import { FormInput } from '../../components/FormElements'
 import { Button } from '../../components/Button'
+import { getUserProfile, getProfileCompletion, saveUserProfile, getCompanyProfile, getCompanyCompletion } from '../../hooks/useUserProfile'
 
 export function LoginPage() {
   const [searchParams] = useSearchParams()
@@ -19,8 +17,28 @@ export function LoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const redirectAfterLogin = (r) => {
-    navigate(r === 'recruiter' ? '/recruiter/dashboard' : '/dashboard')
+  const redirectAfterLogin = (r, firebaseUser = null) => {
+    if (r === 'recruiter') {
+      const company = getCompanyProfile()
+      const isCompanyComplete = getCompanyCompletion(company) >= 100
+      navigate(isCompanyComplete ? '/recruiter/dashboard' : '/recruiter/company-setup')
+    } else {
+      // If Google login, persist basic user info
+      if (firebaseUser) {
+        const nameParts = (firebaseUser.displayName || '').split(' ')
+        saveUserProfile({
+          name: firebaseUser.displayName || '',
+          firstName: nameParts[0] || '',
+          lastName: nameParts.slice(1).join(' ') || '',
+          email: firebaseUser.email || '',
+          photo: firebaseUser.photoURL || null,
+          role: 'employee',
+        })
+      }
+      const profile = getUserProfile()
+      const isComplete = getProfileCompletion(profile) >= 75
+      navigate(isComplete ? '/dashboard' : '/profile-setup')
+    }
   }
 
   const handleSubmit = async (e) => {
@@ -41,8 +59,8 @@ export function LoginPage() {
     setError('')
     setLoading(true)
     try {
-      await signInWithPopup(auth, googleProvider)
-      redirectAfterLogin(role)
+      const result = await signInWithPopup(auth, googleProvider)
+      redirectAfterLogin(role, result.user)
     } catch (err) {
       setError(err.message.replace('Firebase: ', '').replace(/ \(auth\/.*\)\.?/, ''))
     } finally {

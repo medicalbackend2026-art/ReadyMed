@@ -1,9 +1,19 @@
-import React from 'react'
-import { Link } from 'react-router-dom'
+import React, { useEffect } from 'react'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAppContext } from '../../context/AppContext'
+import { getCompanyProfile } from '../../hooks/useUserProfile'
+import { auth } from '../../firebase'
 
 export function RecruiterDashboardPage() {
-  const { jobs, applications } = useAppContext()
+  const { jobs, applications, toggleJobStatus, removeJob, loadRecruiterData } = useAppContext()
+  const navigate = useNavigate()
+  const company = getCompanyProfile() || {}
+
+  useEffect(() => { loadRecruiterData() }, [])
+
+  const companyName = company.companyName || 'Your Company'
+  const companyCity = company.city || ''
+  const isVerified = !!company.regNumber || !!company.regCert
 
   const activeJobsCount = jobs.length
   const totalAppsCount = applications.length
@@ -23,7 +33,10 @@ export function RecruiterDashboardPage() {
     }
   }
 
-  const getInitials = (name) => name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
+  const getInitials = (name) => {
+    if (!name) return '?'
+    return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
+  }
 
   return (
     <div className="max-w-[1100px] mx-auto px-6 py-8 pb-20 font-sans">
@@ -32,7 +45,10 @@ export function RecruiterDashboardPage() {
       <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-7 gap-4">
         <div>
           <h1 className="font-serif text-[26px] text-gray-900 leading-tight">Recruiter Dashboard</h1>
-          <div className="text-sm text-gray-500 mt-1">Apollo Hospitals · Delhi NCR · <span className="text-green-600 font-medium">✓ Verified</span></div>
+          <div className="text-sm text-gray-500 mt-1">
+            {companyName}{companyCity ? ` · ${companyCity}` : ''}
+            {isVerified && <span className="text-green-600 font-medium"> · ✓ Verified</span>}
+          </div>
         </div>
         <Link to="/recruiter/post-job" className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-[13px] font-semibold rounded-lg transition-colors text-center inline-block">
           + Post a new job
@@ -82,10 +98,32 @@ export function RecruiterDashboardPage() {
                     </div>
                     <div className="flex items-center gap-2.5">
                       <span className="text-xs font-semibold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-full">{applicantsCount} applicants</span>
-                      <span className="text-[11px] font-semibold tracking-wide uppercase px-2 py-0.5 rounded-md bg-green-50 text-green-700 border border-green-100">Active</span>
-                      <div className="flex gap-1">
-                        <button className="w-7 h-7 rounded-md border border-border text-gray-500 flex items-center justify-center hover:bg-gray-50 hover:text-gray-700 transition-colors" title="Edit">✎</button>
-                        <button className="w-7 h-7 rounded-md border border-border text-gray-500 flex items-center justify-center hover:bg-gray-50 hover:text-gray-700 transition-colors" title="Pause">⏸</button>
+                      <span className={`text-[11px] font-semibold tracking-wide uppercase px-2 py-0.5 rounded-md border ${job.status === 'draft' ? 'bg-gray-100 text-gray-500 border-gray-200' : job.paused ? 'bg-amber-50 text-amber-700 border-amber-100' : 'bg-green-50 text-green-700 border-green-100'}`}>
+                        {job.status === 'draft' ? 'Draft' : job.paused ? 'Paused' : 'Active'}
+                      </span>
+                      <div className="flex gap-2">
+                        <button onClick={() => navigate(`/recruiter/post-job?edit=${job.id}`)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-300 bg-white text-gray-700 text-xs font-medium hover:bg-gray-50 hover:border-gray-400 transition-colors">
+                          <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M11.5 2.5a2.121 2.121 0 013 3L5 15H1v-4L11.5 2.5z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                          Edit
+                        </button>
+                        <button onClick={() => toggleJobStatus(job.id)}
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors ${job.paused ? 'border-green-300 bg-green-50 text-green-700 hover:bg-green-100' : 'border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100'}`}>
+                          {job.paused ? (
+                            <><svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor"><path d="M3 2l11 6-11 6V2z"/></svg> Resume</>
+                          ) : (
+                            <><svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor"><path d="M4 2h3v12H4V2zm5 0h3v12H9V2z"/></svg> Pause</>
+                          )}
+                        </button>
+                        <button onClick={() => {
+                          if (window.confirm(`Delete "${job.title}"? This cannot be undone.`)) {
+                            removeJob(job.id)
+                          }
+                        }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-200 bg-red-50 text-red-600 text-xs font-medium hover:bg-red-100 hover:border-red-300 transition-colors">
+                          <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M5 4V2h6v2M6 7v5M10 7v5M3 4l1 10h8l1-10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                          Delete
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -105,12 +143,12 @@ export function RecruiterDashboardPage() {
             
             <div className="divide-y divide-border">
               {recentApps.length > 0 ? recentApps.map(app => (
-                <div key={app.id} className="p-3.5 sm:px-5 flex items-center gap-3 hover:bg-gray-50 transition-colors">
+                <div key={app.id} onClick={() => navigate('/recruiter/applications')} className="p-3.5 sm:px-5 flex items-center gap-3 hover:bg-gray-50 transition-colors cursor-pointer">
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center text-[13px] font-bold shrink-0 bg-blue-100 text-blue-700`}>
-                    {getInitials(app.candidateName)}
+                    {getInitials(app.candidateName || app.applicantName)}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-semibold text-gray-900 truncate">{app.candidateName}</div>
+                    <div className="text-sm font-semibold text-gray-900 truncate">{app.candidateName || app.applicantName || 'Applicant'}</div>
                     <div className="text-xs text-gray-500 truncate">Applied for: {app.jobTitle}</div>
                   </div>
                   <div className={`text-[11px] font-semibold px-2.5 py-1 rounded-full shrink-0 ${getStatusColor(app.status)}`}>
@@ -138,7 +176,7 @@ export function RecruiterDashboardPage() {
                 <div className="text-[22px] mb-1.5">📝</div>
                 <div className="text-[13px] font-semibold text-gray-700">Post a Job</div>
               </Link>
-              <Link to="/recruiter/search" className="p-4 border border-border rounded-lg text-center hover:border-blue-200 hover:bg-blue-50 transition-all hover:shadow-sm">
+              <Link to="/recruiter/candidates" className="p-4 border border-border rounded-lg text-center hover:border-blue-200 hover:bg-blue-50 transition-all hover:shadow-sm">
                 <div className="text-[22px] mb-1.5">🔍</div>
                 <div className="text-[13px] font-semibold text-gray-700">Search Candidates</div>
               </Link>
@@ -159,39 +197,34 @@ export function RecruiterDashboardPage() {
               <div className="text-[15px] font-semibold text-gray-900">Notifications</div>
             </div>
             <div className="divide-y divide-border">
-              
-              <div className="p-4 flex gap-2.5 items-start">
-                <div className="w-2 h-2 rounded-full bg-blue-400 mt-[5px] shrink-0"></div>
-                <div>
-                  <div className="text-[13px] text-gray-700 leading-snug"><span className="font-semibold text-gray-900">Dr. Sneha Kulkarni</span> applied for Consultant — Internal Medicine.</div>
-                  <div className="text-[11px] text-gray-400 mt-0.5">1 hour ago</div>
-                </div>
-              </div>
-              
-              <div className="p-4 flex gap-2.5 items-start">
-                <div className="w-2 h-2 rounded-full bg-blue-400 mt-[5px] shrink-0"></div>
-                <div>
-                  <div className="text-[13px] text-gray-700 leading-snug"><span className="font-semibold text-gray-900">Dr. Vikram Singh</span> accepted your invite to apply.</div>
-                  <div className="text-[11px] text-gray-400 mt-0.5">3 hours ago</div>
-                </div>
-              </div>
-              
-              <div className="p-4 flex gap-2.5 items-start">
-                <div className="w-2 h-2 rounded-full bg-blue-400 mt-[5px] shrink-0"></div>
-                <div>
-                  <div className="text-[13px] text-gray-700 leading-snug">Your job post <span className="font-semibold text-gray-900">"ICU Staff Nurse"</span> expires in 3 days.</div>
-                  <div className="text-[11px] text-gray-400 mt-0.5">Yesterday</div>
-                </div>
-              </div>
-
-              <div className="p-4 flex gap-2.5 items-start">
-                <div className="w-2 h-2 rounded-full bg-gray-200 mt-[5px] shrink-0"></div>
-                <div>
-                  <div className="text-[13px] text-gray-700 leading-snug">5 new applications received this week across all listings.</div>
-                  <div className="text-[11px] text-gray-400 mt-0.5">2 days ago</div>
-                </div>
-              </div>
-
+              {applications.length === 0 && jobs.length === 0 ? (
+                <div className="px-5 py-6 text-sm text-gray-400 text-center">No notifications yet.</div>
+              ) : (
+                <>
+                  {applications.slice(0, 3).map(app => (
+                    <div key={app.id} className="p-4 flex gap-2.5 items-start">
+                      <div className="w-2 h-2 rounded-full bg-blue-400 mt-[5px] shrink-0"></div>
+                      <div>
+                        <div className="text-[13px] text-gray-700 leading-snug">
+                          <span className="font-semibold text-gray-900">{app.candidateName || app.applicantName || 'Someone'}</span> applied for {app.jobTitle}.
+                        </div>
+                        <div className="text-[11px] text-gray-400 mt-0.5">{app.date || 'Recently'}</div>
+                      </div>
+                    </div>
+                  ))}
+                  {applications.length > 0 && (
+                    <div className="p-4 flex gap-2.5 items-start">
+                      <div className="w-2 h-2 rounded-full bg-gray-200 mt-[5px] shrink-0"></div>
+                      <div>
+                        <div className="text-[13px] text-gray-700 leading-snug">
+                          {applications.length} application{applications.length !== 1 ? 's' : ''} received across all listings.
+                        </div>
+                        <div className="text-[11px] text-gray-400 mt-0.5">Total</div>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           </div>
 

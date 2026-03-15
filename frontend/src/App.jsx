@@ -17,6 +17,7 @@ import { ProfileSetupPage } from './pages/employee/ProfileSetupPage'
 import { PostJobPage } from './pages/recruiter/PostJobPage'
 import { CandidateSearchPage } from './pages/recruiter/CandidateSearchPage'
 import { ManageApplicationsPage } from './pages/recruiter/ManageApplicationsPage'
+import { JobCandidatesPage } from './pages/recruiter/JobCandidatesPage'
 import { RecruiterDashboardPage as RecDashboard } from './pages/recruiter/DashboardPage'
 import { CompanySetupPage } from './pages/recruiter/CompanySetupPage'
 
@@ -90,6 +91,7 @@ export default function App() {
             <Route path="post-job" element={<PostJobPage />} />
             <Route path="candidates" element={<CandidateSearchPage />} />
             <Route path="applications" element={<ManageApplicationsPage />} />
+            <Route path="applications/:jobId" element={<JobCandidatesPage />} />
             <Route path="dashboard" element={<RecDashboard />} />
             <Route path="company-setup" element={<CompanySetupPage />} />
           </Route>

@@ -4,10 +4,16 @@ import {
   createUserWithEmailAndPassword,
   signInWithPopup,
   updateProfile,
+  RecaptchaVerifier,
+  signInWithPhoneNumber,
+  linkWithCredential,
+  PhoneAuthProvider,
+  EmailAuthProvider,
 } from 'firebase/auth'
 import { auth, googleProvider } from '../../firebase'
 import { FormInput } from '../../components/FormElements'
 import { Button } from '../../components/Button'
+import { saveUserProfile, getUserProfile, getProfileCompletion } from '../../hooks/useUserProfile'
 
 const ROLE_CONFIG = {
   employee: {
@@ -51,10 +57,60 @@ export function SignupPage() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [step, setStep] = useState('form') // 'form' or 'otp'
+  const [otp, setOtp] = useState('')
+  const [confirmationResult, setConfirmationResult] = useState(null)
 
   const config = ROLE_CONFIG[role]
 
-  const handleSubmit = async (e) => {
+  const setupRecaptcha = () => {
+    if (!window.recaptchaVerifier) {
+      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        size: 'invisible',
+      })
+    }
+  }
+
+  const handleSendOtp = async (e) => {
+    e.preventDefault()
+    setError('')
+
+    if (password !== confirmPassword) {
+      return setError('Passwords do not match.')
+    }
+    if (password.length < 8) {
+      return setError('Password must be at least 8 characters.')
+    }
+    if (!phone || phone.length < 10) {
+      return setError('Please enter a valid phone number with country code (e.g. +91...)')
+    }
+
+    setLoading(true)
+    try {
+      // Initialize recapcha
+      setupRecaptcha()
+      const appVerifier = window.recaptchaVerifier
+      
+      // Ensure phone has a + at start for firebase
+      const formattedPhone = phone.startsWith('+') ? phone : `+91${phone}`
+
+      // Request OTP
+      const confirmation = await signInWithPhoneNumber(auth, formattedPhone, appVerifier)
+      setConfirmationResult(confirmation)
+      setStep('otp')
+    } catch (err) {
+      setError(err.message.replace('Firebase: ', '').replace(/ \(auth\/.*\)\.?/, ''))
+      // Reset recaptcha if error
+      if (window.recaptchaVerifier) {
+        window.recaptchaVerifier.clear()
+        window.recaptchaVerifier = null
+      }
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleVerifyOtp = async (e) => {
     e.preventDefault()
     setError('')
 
@@ -67,12 +123,33 @@ export function SignupPage() {
 
     setLoading(true)
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password)
-      await updateProfile(userCredential.user, {
-        displayName: `${firstName} ${lastName}`,
+      // 1. Verify OTP to sign in with Phone
+      const result = await confirmationResult.confirm(otp)
+      const user = result.user
+
+      // 2. Link Email/Password credential to the phone user
+      const credential = EmailAuthProvider.credential(email, password)
+      await linkWithCredential(user, credential)
+
+      // 3. Update profile details
+      const fullName = `${firstName} ${lastName}`.trim()
+      await updateProfile(user, { displayName: fullName })
+      
+      // 4. Save user data to localStorage
+      saveUserProfile({
+        name: fullName,
+        firstName,
+        lastName,
+        email,
+        phone,
+        role,
+        orgName: role === 'recruiter' ? orgName : undefined,
       })
-      // Navigate based on role
-      navigate(role === 'recruiter' ? '/recruiter/dashboard' : '/dashboard')
+      
+      // 5. Navigate — skip profile-setup if profile already ≥75%
+      const profile = getUserProfile()
+      const alreadyFilled = getProfileCompletion(profile) >= 75
+      navigate(role === 'recruiter' ? '/recruiter/dashboard' : (alreadyFilled ? '/dashboard' : '/profile-setup'))
     } catch (err) {
       setError(err.message.replace('Firebase: ', '').replace(/ \(auth\/.*\)\.?/, ''))
     } finally {
@@ -84,8 +161,21 @@ export function SignupPage() {
     setError('')
     setLoading(true)
     try {
-      await signInWithPopup(auth, googleProvider)
-      navigate(role === 'recruiter' ? '/recruiter/dashboard' : '/dashboard')
+      const result = await signInWithPopup(auth, googleProvider)
+      const gUser = result.user
+      const nameParts = (gUser.displayName || '').split(' ')
+      saveUserProfile({
+        name: gUser.displayName || '',
+        firstName: nameParts[0] || '',
+        lastName: nameParts.slice(1).join(' ') || '',
+        email: gUser.email || '',
+        phone: gUser.phoneNumber || '',
+        role,
+        photo: gUser.photoURL || null,
+      })
+      const profile2 = getUserProfile()
+      const alreadyFilled2 = getProfileCompletion(profile2) >= 75
+      navigate(role === 'recruiter' ? '/recruiter/dashboard' : (alreadyFilled2 ? '/dashboard' : '/profile-setup'))
     } catch (err) {
       setError(err.message.replace('Firebase: ', '').replace(/ \(auth\/.*\)\.?/, ''))
     } finally {
@@ -181,81 +271,118 @@ export function SignupPage() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit}>
-            <div className="grid grid-cols-2 gap-3 mb-[18px]">
-              <div className="mb-0 [&>div]:mb-0">
-                <FormInput
-                  label="First name"
-                  placeholder="Sneha"
-                  required
-                  className="mb-0"
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                />
-              </div>
-              <div className="mb-0 [&>div]:mb-0">
-                <FormInput
-                  label="Last name"
-                  placeholder="Kulkarni"
-                  required
-                  className="mb-0"
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                />
-              </div>
-            </div>
+          <div id="recaptcha-container"></div>
 
-            {role === 'recruiter' && (
+          {step === 'form' ? (
+            <form onSubmit={handleSendOtp}>
+              <div className="grid grid-cols-2 gap-3 mb-[18px]">
+                <div className="mb-0 [&>div]:mb-0">
+                  <FormInput
+                    label="First name"
+                    placeholder="Sneha"
+                    required
+                    className="mb-0"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                  />
+                </div>
+                <div className="mb-0 [&>div]:mb-0">
+                  <FormInput
+                    label="Last name"
+                    placeholder="Kulkarni"
+                    required
+                    className="mb-0"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {role === 'recruiter' && (
+                <FormInput
+                  label="Organisation / Hospital name"
+                  placeholder="Apollo Hospitals"
+                  required
+                  value={orgName}
+                  onChange={(e) => setOrgName(e.target.value)}
+                />
+              )}
+
               <FormInput
-                label="Organisation / Hospital name"
-                placeholder="Apollo Hospitals"
+                label="Email address"
+                type="email"
+                placeholder="sneha@example.com"
                 required
-                value={orgName}
-                onChange={(e) => setOrgName(e.target.value)}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
               />
-            )}
+              <FormInput
+                label="Phone number"
+                type="tel"
+                placeholder="+919876543210"
+                required
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+              />
+              <FormInput
+                label="Password"
+                type="password"
+                placeholder="Min. 8 characters"
+                hint="At least 8 characters with one number and one letter."
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <FormInput
+                label="Confirm password"
+                type="password"
+                placeholder="Re-enter password"
+                className="mb-[22px]"
+                required
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+              />
 
-            <FormInput
-              label="Email address"
-              type="email"
-              placeholder="sneha@example.com"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-            <FormInput
-              label="Phone number"
-              type="tel"
-              placeholder="+91 98765 43210"
-              required
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-            />
-            <FormInput
-              label="Password"
-              type="password"
-              placeholder="Min. 8 characters"
-              hint="At least 8 characters with one number and one letter."
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-            <FormInput
-              label="Confirm password"
-              type="password"
-              placeholder="Re-enter password"
-              className="mb-[22px]"
-              required
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-            />
+              <input type="hidden" name="role" value={role} />
 
-            <input type="hidden" name="role" value={role} />
+              <Button type="submit" variant="primary" size="lg" fullWidth disabled={loading}>
+                {loading ? 'Sending OTP…' : `Verify Phone Number`}
+              </Button>
+            </form>
+          ) : (
+            <form onSubmit={handleVerifyOtp} className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="mb-6 p-4 rounded-lg bg-teal-50 border border-teal-100 flex items-start gap-3">
+                 <div className="text-xl mt-1">📱</div>
+                 <div>
+                   <h3 className="text-sm font-semibold text-teal-900 mb-1">Verify your phone</h3>
+                   <p className="text-sm text-teal-800">We've sent a 6-digit code to {phone}</p>
+                 </div>
+              </div>
 
-            <Button type="submit" variant="primary" size="lg" fullWidth disabled={loading}>
-              {loading ? 'Creating account…' : `Create ${role === 'recruiter' ? 'employer' : 'professional'} account`}
-            </Button>
-          </form>
+              <FormInput
+                label="Verification Code (OTP)"
+                type="text"
+                placeholder="123456"
+                required
+                maxLength={6}
+                value={otp}
+                onChange={(e) => setOtp(e.target.value)}
+                className="text-center text-lg tracking-widest font-mono"
+              />
+
+              <Button type="submit" variant="primary" size="lg" fullWidth disabled={loading || otp.length < 6}>
+                {loading ? 'Creating account…' : `Create ${role === 'recruiter' ? 'employer' : 'professional'} account`}
+              </Button>
+
+              <button 
+                type="button" 
+                onClick={() => setStep('form')}
+                className="w-full mt-4 text-sm text-gray-500 hover:text-gray-700 font-medium"
+              >
+                Back to details
+              </button>
+            </form>
+          )}
 
           <div className="text-center text-[13px] text-gray-500 mt-6">
             Already have an account?{' '}

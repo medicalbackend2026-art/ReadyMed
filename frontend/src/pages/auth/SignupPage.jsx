@@ -14,6 +14,7 @@ import { auth, googleProvider } from '../../firebase'
 import { FormInput } from '../../components/FormElements'
 import { Button } from '../../components/Button'
 import { saveUserProfile, getUserProfile, getProfileCompletion } from '../../hooks/useUserProfile'
+import { useAppContext } from '../../context/AppContext'
 
 const ROLE_CONFIG = {
   employee: {
@@ -47,6 +48,7 @@ export function SignupPage() {
   const initialRole = searchParams.get('role') === 'recruiter' ? 'recruiter' : 'employee'
   const [role, setRole] = useState(initialRole)
   const navigate = useNavigate()
+  const { setCurrentUser } = useAppContext()
 
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
@@ -149,6 +151,7 @@ export function SignupPage() {
       // 5. Navigate — skip profile-setup if profile already ≥75%
       const profile = getUserProfile()
       const alreadyFilled = getProfileCompletion(profile) >= 75
+      setCurrentUser({ name: fullName, role, email })
       navigate(role === 'recruiter' ? '/recruiter/dashboard' : (alreadyFilled ? '/dashboard' : '/profile-setup'))
     } catch (err) {
       setError(err.message.replace('Firebase: ', '').replace(/ \(auth\/.*\)\.?/, ''))
@@ -175,6 +178,7 @@ export function SignupPage() {
       })
       const profile2 = getUserProfile()
       const alreadyFilled2 = getProfileCompletion(profile2) >= 75
+      setCurrentUser({ name: gUser.displayName || '', role, email: gUser.email || '' })
       navigate(role === 'recruiter' ? '/recruiter/dashboard' : (alreadyFilled2 ? '/dashboard' : '/profile-setup'))
     } catch (err) {
       setError(err.message.replace('Firebase: ', '').replace(/ \(auth\/.*\)\.?/, ''))

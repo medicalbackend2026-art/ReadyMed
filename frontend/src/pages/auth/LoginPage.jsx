@@ -5,12 +5,14 @@ import { auth, googleProvider } from '../../firebase'
 import { FormInput } from '../../components/FormElements'
 import { Button } from '../../components/Button'
 import { getUserProfile, getProfileCompletion, saveUserProfile, getCompanyProfile, getCompanyCompletion } from '../../hooks/useUserProfile'
+import { useAppContext } from '../../context/AppContext'
 
 export function LoginPage() {
   const [searchParams] = useSearchParams()
   const initialRole = searchParams.get('role') === 'recruiter' ? 'recruiter' : 'employee'
   const [role, setRole] = useState(initialRole)
   const navigate = useNavigate()
+  const { setCurrentUser } = useAppContext()
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -18,9 +20,15 @@ export function LoginPage() {
   const [loading, setLoading] = useState(false)
 
   const redirectAfterLogin = (r, firebaseUser = null) => {
+    let name = 'Guest';
+    let userEmail = '';
+    
     if (r === 'recruiter') {
       const company = getCompanyProfile()
       const isCompanyComplete = getCompanyCompletion(company) >= 100
+      name = company?.companyName || firebaseUser?.displayName || 'Employer'
+      userEmail = company?.email || firebaseUser?.email || email
+      setCurrentUser({ name, role: 'recruiter', email: userEmail })
       navigate(isCompanyComplete ? '/recruiter/dashboard' : '/recruiter/company-setup')
     } else {
       // If Google login, persist basic user info
@@ -37,6 +45,9 @@ export function LoginPage() {
       }
       const profile = getUserProfile()
       const isComplete = getProfileCompletion(profile) >= 75
+      name = profile?.name || firebaseUser?.displayName || 'User'
+      userEmail = profile?.email || firebaseUser?.email || email
+      setCurrentUser({ name, role: 'employee', email: userEmail })
       navigate(isComplete ? '/dashboard' : '/profile-setup')
     }
   }
@@ -46,8 +57,8 @@ export function LoginPage() {
     setError('')
     setLoading(true)
     try {
-      await signInWithEmailAndPassword(auth, email, password)
-      redirectAfterLogin(role)
+      const cred = await signInWithEmailAndPassword(auth, email, password)
+      redirectAfterLogin(role, cred.user)
     } catch (err) {
       setError(err.message.replace('Firebase: ', '').replace(/ \(auth\/.*\)\.?/, ''))
     } finally {

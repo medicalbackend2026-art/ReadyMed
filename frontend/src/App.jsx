@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Outlet } from 'react-router-dom
 import { AppProvider } from './context/AppContext'
 import { Navbar } from './components/Navbar'
 import { Footer } from './components/Footer'
+import { ProtectedRoute } from './components/ProtectedRoute'
 
 // Import placeholders for pages
 import { HomePage } from './pages/HomePage'
@@ -78,22 +79,26 @@ export default function App() {
             <Route path="/otp-verify" element={<OTPVerifyPage />} />
           </Route>
 
-          {/* Employee Routes */}
-          <Route element={<EmployeeLayout />}>
-            <Route path="/jobs" element={<JobFeedPage />} />
-            <Route path="/jobs/:id" element={<JobDetailPage />} />
-            <Route path="/dashboard" element={<EmpDashboard />} />
-            <Route path="/profile-setup" element={<ProfileSetupPage />} />
+          {/* Employee Routes - PROTECTED */}
+          <Route element={<ProtectedRoute allowedRoles={['employee']} />}>
+            <Route element={<EmployeeLayout />}>
+              <Route path="/jobs" element={<JobFeedPage />} />
+              <Route path="/jobs/:id" element={<JobDetailPage />} />
+              <Route path="/dashboard" element={<EmpDashboard />} />
+              <Route path="/profile-setup" element={<ProfileSetupPage />} />
+            </Route>
           </Route>
 
-          {/* Recruiter Routes */}
-          <Route path="/recruiter" element={<RecruiterLayout />}>
-            <Route path="post-job" element={<PostJobPage />} />
-            <Route path="candidates" element={<CandidateSearchPage />} />
-            <Route path="applications" element={<ManageApplicationsPage />} />
-            <Route path="applications/:jobId" element={<JobCandidatesPage />} />
-            <Route path="dashboard" element={<RecDashboard />} />
-            <Route path="company-setup" element={<CompanySetupPage />} />
+          {/* Recruiter Routes - PROTECTED */}
+          <Route element={<ProtectedRoute allowedRoles={['recruiter']} />}>
+            <Route path="/recruiter" element={<RecruiterLayout />}>
+              <Route path="post-job" element={<PostJobPage />} />
+              <Route path="candidates" element={<CandidateSearchPage />} />
+              <Route path="applications" element={<ManageApplicationsPage />} />
+              <Route path="applications/:jobId" element={<JobCandidatesPage />} />
+              <Route path="dashboard" element={<RecDashboard />} />
+              <Route path="company-setup" element={<CompanySetupPage />} />
+            </Route>
           </Route>
         </Routes>
       </Router>

@@ -36,3 +36,10 @@ firebase-admin*.json
 
 # Backend node_modules
 backend/node_modules
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+

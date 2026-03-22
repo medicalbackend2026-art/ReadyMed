@@ -68,8 +68,11 @@ export function AppProvider({ children }) {
   const getStoredUser = () => {
     const profile = getUserProfile()
     if (profile?.name) {
-      return { name: profile.name, role: profile.role || 'employee', email: profile.email || '' }
+      const role = profile.role || 'employee'
+      console.log('getStoredUser from localStorage:', { name: profile.name, role, email: profile.email })
+      return { name: profile.name, role, email: profile.email || '' }
     }
+    console.log('getStoredUser: no profile found, returning Guest')
     return { name: 'Guest', role: 'employee', email: '' }
   }
 

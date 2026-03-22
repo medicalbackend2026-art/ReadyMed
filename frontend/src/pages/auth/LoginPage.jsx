@@ -25,11 +25,21 @@ export function LoginPage() {
     
     if (r === 'recruiter') {
       const company = getCompanyProfile()
-      const isCompanyComplete = getCompanyCompletion(company) >= 100
       name = company?.companyName || firebaseUser?.displayName || 'Employer'
       userEmail = company?.email || firebaseUser?.email || email
+
+      // persist recruiter role/profile so service routing resolves correctly
+      saveUserProfile({
+        name,
+        email: userEmail,
+        role: 'recruiter',
+        orgName: company?.companyName || undefined,
+        orgType: company?.orgType || undefined,
+        city: company?.city || undefined,
+      })
+
       setCurrentUser({ name, role: 'recruiter', email: userEmail })
-      navigate(isCompanyComplete ? '/recruiter/dashboard' : '/recruiter/company-setup')
+      navigate('/recruiter/services')
     } else {
       // If Google login, persist basic user info
       if (firebaseUser) {
@@ -40,15 +50,14 @@ export function LoginPage() {
           lastName: nameParts.slice(1).join(' ') || '',
           email: firebaseUser.email || '',
           photo: firebaseUser.photoURL || null,
-          role: 'employee',
+          role: role,
         })
       }
       const profile = getUserProfile()
-      const isComplete = getProfileCompletion(profile) >= 75
       name = profile?.name || firebaseUser?.displayName || 'User'
       userEmail = profile?.email || firebaseUser?.email || email
-      setCurrentUser({ name, role: 'employee', email: userEmail })
-      navigate(isComplete ? '/dashboard' : '/profile-setup')
+      setCurrentUser({ name, role: role, email: userEmail })
+      navigate('/services')
     }
   }
 

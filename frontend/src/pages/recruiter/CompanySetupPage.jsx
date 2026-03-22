@@ -145,11 +145,11 @@ export function CompanySetupPage() {
         })
         if (!res.ok) { const err = await res.json(); throw new Error(err.error || 'Save failed') }
       }
-      navigate('/recruiter/dashboard')
+      navigate('/recruiter/services')
     } catch (err) {
       console.error('Company sync error:', err)
       setSaveError('Saved locally but could not sync to cloud. Continuing…')
-      setTimeout(() => navigate('/recruiter/dashboard'), 2000)
+      setTimeout(() => navigate('/recruiter/services'), 2000)
     } finally {
       setSaving(false)
     }
@@ -157,6 +157,14 @@ export function CompanySetupPage() {
 
   return (
     <div className="max-w-[1100px] mx-auto px-6 py-10 pb-20 font-sans">
+      
+      {/* Back button */}
+      <button 
+        onClick={() => navigate('/recruiter/services')}
+        className="mb-6 inline-flex items-center gap-2 px-3 py-2 text-teal-600 hover:bg-teal-50 rounded-lg transition-colors font-medium text-sm"
+      >
+        ← Back to Services
+      </button>
 
       {loadingFromCloud && (
         <div className="flex items-center justify-center py-20 text-sm text-gray-400 gap-2">

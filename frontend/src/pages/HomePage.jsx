@@ -259,19 +259,35 @@ export function HomePage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-14">
             <div className="p-8 rounded-[18px] border border-page-border bg-page-surface relative overflow-hidden fade-up">
               <div className="font-serif text-[80px] font-semibold text-page-border leading-[0.9] absolute top-5 right-5 hover:text-page-border2 transition-colors">01</div>
-              <div className="text-3xl mb-4">👤</div>
+              <div className="w-12 h-12 mb-5 rounded-xl bg-page-accent/10 flex items-center justify-center text-page-accent shadow-sm border border-page-accent/20">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
+                  <circle cx="12" cy="7" r="4"/>
+                </svg>
+              </div>
               <div className="text-[17px] font-semibold text-page-text mb-2">Create your profile</div>
               <p className="text-sm text-page-text2 leading-relaxed">Sign up, select your profession, and fill in your experience, education, certifications, and salary expectations in a guided 7-step flow.</p>
             </div>
             <div className="p-8 rounded-[18px] border border-page-border bg-page-surface relative overflow-hidden fade-up delay-100">
               <div className="font-serif text-[80px] font-semibold text-page-border leading-[0.9] absolute top-5 right-5 hover:text-page-border2 transition-colors">02</div>
-              <div className="text-3xl mb-4">🎯</div>
+              <div className="w-12 h-12 mb-5 rounded-xl bg-page-accent/10 flex items-center justify-center text-page-accent shadow-sm border border-page-accent/20">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <circle cx="12" cy="12" r="6"/>
+                  <circle cx="12" cy="12" r="2"/>
+                </svg>
+              </div>
               <div className="text-[17px] font-semibold text-page-text mb-2">Get matched instantly</div>
               <p className="text-sm text-page-text2 leading-relaxed">Our matching engine connects you with the most relevant jobs or candidates based on profession, skills, location, and salary — no noise, just signal.</p>
             </div>
             <div className="p-8 rounded-[18px] border border-page-border bg-page-surface relative overflow-hidden fade-up delay-200">
               <div className="font-serif text-[80px] font-semibold text-page-border leading-[0.9] absolute top-5 right-5 hover:text-page-border2 transition-colors">03</div>
-              <div className="text-3xl mb-4">🤝</div>
+              <div className="w-12 h-12 mb-5 rounded-xl bg-page-accent/10 flex items-center justify-center text-page-accent shadow-sm border border-page-accent/20">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+                  <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+                </svg>
+              </div>
               <div className="text-[17px] font-semibold text-page-text mb-2">Apply or hire</div>
               <p className="text-sm text-page-text2 leading-relaxed">Professionals apply in one tap. Recruiters post jobs and invite candidates directly. Track every step of the process from your dashboard.</p>
             </div>

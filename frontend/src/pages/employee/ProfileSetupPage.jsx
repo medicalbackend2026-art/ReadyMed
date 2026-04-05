@@ -98,7 +98,7 @@ export function ProfileSetupPage() {
           ]
           const pct = Math.round((checks.filter(Boolean).length / 7) * 100)
           if (pct >= 75 && isFirstLogin) {
-            navigate('/dashboard')
+            navigate('/services')
             return
           }
         }
@@ -379,8 +379,6 @@ export function ProfileSetupPage() {
   return (
     <div className="max-w-[1100px] mx-auto px-6 py-10 pb-20 font-sans">
 
-<<<<<<< Updated upstream
-=======
       {/* Back button */}
       <button
         onClick={() => navigate('/services')}
@@ -389,7 +387,6 @@ export function ProfileSetupPage() {
         ← Back to Services
       </button>
 
->>>>>>> Stashed changes
       {/* Page title */}
       <div className="mb-8">
         <h1 className="font-serif text-[26px] text-gray-900 mb-1">Complete your profile</h1>

@@ -159,6 +159,14 @@ export function CompanySetupPage() {
 
   return (
     <div className="max-w-[1100px] mx-auto px-6 py-10 pb-20 font-sans">
+      
+      {/* Back button */}
+      <button 
+        onClick={() => navigate('/recruiter/services')}
+        className="mb-6 inline-flex items-center gap-2 px-3 py-2 text-teal-600 hover:bg-teal-50 rounded-lg transition-colors font-medium text-sm"
+      >
+        ← Back to Services
+      </button>
 
       {loadingFromCloud && (
         <div className="flex items-center justify-center py-20 text-sm text-gray-400 gap-2">

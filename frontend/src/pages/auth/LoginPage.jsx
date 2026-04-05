@@ -12,30 +12,6 @@ export function LoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-<<<<<<< Updated upstream
-  const redirectAfterLogin = (r, firebaseUser = null) => {
-    let name = 'Guest';
-    let userEmail = '';
-    
-    if (r === 'recruiter') {
-      const company = getCompanyProfile()
-      const isCompanyComplete = getCompanyCompletion(company) >= 100
-      name = company?.companyName || firebaseUser?.displayName || 'Employer'
-      userEmail = company?.email || firebaseUser?.email || email
-      setCurrentUser({ name, role: 'recruiter', email: userEmail })
-      navigate(isCompanyComplete ? '/recruiter/dashboard' : '/recruiter/company-setup')
-    } else {
-      // If Google login, persist basic user info
-      if (firebaseUser) {
-        const nameParts = (firebaseUser.displayName || '').split(' ')
-        saveUserProfile({
-          name: firebaseUser.displayName || '',
-          firstName: nameParts[0] || '',
-          lastName: nameParts.slice(1).join(' ') || '',
-          email: firebaseUser.email || '',
-          photo: firebaseUser.photoURL || null,
-          role: 'employee',
-=======
   // If user is already logged in via Firebase, skip the login page
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -45,7 +21,6 @@ export function LoginPage() {
         const API = import.meta.env.VITE_API_URL || 'http://localhost:5000'
         const res = await fetch(`${API}/api/users/profile`, {
           headers: { Authorization: `Bearer ${token}` }
->>>>>>> Stashed changes
         })
         if (res.ok) {
           const { profile } = await res.json()
@@ -58,34 +33,9 @@ export function LoginPage() {
       } catch (e) {
         // If cloud check fails, stay on login — user can sign in manually
       }
-<<<<<<< Updated upstream
-      const profile = getUserProfile()
-      const isComplete = getProfileCompletion(profile) >= 75
-      name = profile?.name || firebaseUser?.displayName || 'User'
-      userEmail = profile?.email || firebaseUser?.email || email
-      setCurrentUser({ name, role: 'employee', email: userEmail })
-      navigate(isComplete ? '/dashboard' : '/profile-setup')
-    }
-  }
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setError('')
-    setLoading(true)
-    try {
-      const cred = await signInWithEmailAndPassword(auth, email, password)
-      redirectAfterLogin(role, cred.user)
-    } catch (err) {
-      setError(err.message.replace('Firebase: ', '').replace(/ \(auth\/.*\)\.?/, ''))
-    } finally {
-      setLoading(false)
-    }
-  }
-=======
     })
     return () => unsub()
   }, [])
->>>>>>> Stashed changes
 
   const handleGoogle = async () => {
     setError('')

@@ -41,16 +41,19 @@ export function Navbar({ variant = 'public' }) {
   }
 
   if (variant === 'employee') {
+    const isServicesPage = location.pathname === '/services'
     return (
       <nav className="sticky top-0 z-50 h-[64px] bg-white border-b border-border">
         <div className="container-main h-full flex items-center justify-between">
           <Link to="/" className="font-serif text-2xl text-teal-700 tracking-tight">
             Ready<span className="text-teal-200">MD</span>
           </Link>
-          <div className="flex items-center gap-1.5">
-            <Link to="/dashboard" className={getLinkClass('/dashboard')}>Dashboard</Link>
-            <Link to="/jobs" className={getLinkClass('/jobs')}>Find Jobs</Link>
-          </div>
+          {!isServicesPage && (
+            <div className="flex items-center gap-1.5">
+              <Link to="/dashboard" className={getLinkClass('/dashboard')}>Dashboard</Link>
+              <Link to="/jobs" className={getLinkClass('/jobs')}>Find Jobs</Link>
+            </div>
+          )}
           <div className="flex items-center gap-3">
             <div className="relative" ref={avatarRef}>
               <button
@@ -88,17 +91,20 @@ export function Navbar({ variant = 'public' }) {
   }
 
   if (variant === 'recruiter') {
+    const isServicesPage = location.pathname === '/recruiter/services'
     return (
       <nav className="sticky top-0 z-50 h-[64px] bg-white border-b border-border">
         <div className="container-main h-full flex items-center justify-between">
           <Link to="/" className="font-serif text-2xl text-teal-700 tracking-tight">
             Ready<span className="text-teal-200">MD</span>
           </Link>
-          <div className="flex items-center gap-1.5">
-            <Link to="/recruiter/candidates" className={getLinkClass('/recruiter/candidates')}>Search</Link>
-            <Link to="/recruiter/dashboard" className={getLinkClass('/recruiter/dashboard')}>Dashboard</Link>
-            <Link to="/recruiter/applications" className={getLinkClass('/recruiter/applications')}>Applications</Link>
-          </div>
+          {!isServicesPage && (
+            <div className="flex items-center gap-1.5">
+              <Link to="/recruiter/candidates" className={getLinkClass('/recruiter/candidates')}>Search</Link>
+              <Link to="/recruiter/dashboard" className={getLinkClass('/recruiter/dashboard')}>Dashboard</Link>
+              <Link to="/recruiter/applications" className={getLinkClass('/recruiter/applications')}>Applications</Link>
+            </div>
+          )}
           <div className="flex items-center gap-3">
             <Link to="/recruiter/post-job" className="px-4 py-[7px] text-[13px] font-semibold rounded-lg bg-teal-700 text-white hover:bg-teal-800 transition-colors">Post Job</Link>
             <div className="relative" ref={avatarRef}>

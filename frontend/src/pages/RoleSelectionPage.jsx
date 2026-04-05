@@ -1,9 +1,3 @@
-<<<<<<< Updated upstream
-import React from 'react'
-import { Link } from 'react-router-dom'
-
-export function RoleSelectionPage() {
-=======
 import React, { useState } from 'react'
 import { useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { saveUserProfile } from '../hooks/useUserProfile'
@@ -118,61 +112,44 @@ export function RoleSelectionPage() {
     }
   }
 
->>>>>>> Stashed changes
   return (
     <div className="min-h-[calc(100vh-68px)] flex flex-col items-center justify-center p-6 bg-page-bg font-sans">
-      <div className="max-w-[800px] w-full mt-10">
+      <div className="max-w-[1000px] w-full mt-10 mb-10">
         <div className="text-center mb-12">
-          <h1 className="font-serif text-3xl md:text-5xl font-normal text-page-text mb-4">How would you like to use ReadyMD?</h1>
-          <p className="text-[15px] text-page-text2">Select your profile type to personalise your experience.</p>
+          <h1 className="font-serif text-3xl md:text-5xl font-normal text-page-text mb-4">
+            {fromSignup ? 'Welcome to ReadyMed! What\'s your role?' : 'Select Your Healthcare Role'}
+          </h1>
+          <p className="text-[15px] text-page-text2">
+            Choose your profession to get started with a personalized experience
+          </p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-6 mb-10">
-          {/* Employee Card */}
-          <Link to="/signup?role=employee" className="block p-8 bg-page-surface border-2 border-transparent hover:border-page-accent rounded-2xl shadow-sm hover:shadow-lg transition-all group">
-            <div className="w-16 h-16 rounded-[14px] bg-teal-50 text-teal-600 flex items-center justify-center text-3xl mb-6 group-hover:scale-110 transition-transform">
-              👨‍⚕️
-            </div>
-            <h2 className="font-serif text-2xl font-medium text-page-text mb-3">I'm looking for a job</h2>
-            <p className="text-[14px] text-page-text3 mb-8 min-h-[42px]">Create a professional profile, browse verified medical jobs, and apply with one tap.</p>
-            <ul className="text-[13px] text-page-text2 space-y-3 font-medium">
-              <li className="flex gap-2.5">
-                <span className="text-page-accent">✓</span> Access 10,000+ hospital jobs
-              </li>
-              <li className="flex gap-2.5">
-                <span className="text-page-accent">✓</span> Track application status
-              </li>
-              <li className="flex gap-2.5">
-                <span className="text-page-accent">✓</span> Direct messaging with HR
-              </li>
-            </ul>
-            <div className="mt-8 font-semibold text-page-accent group-hover:translate-x-1 transition-transform inline-flex items-center gap-1.5">
-              Join as Professional <span aria-hidden="true">&rarr;</span>
-            </div>
-          </Link>
-
-          {/* Recruiter Card */}
-          <Link to="/signup?role=recruiter" className="block p-8 bg-page-surface border-2 border-transparent hover:border-page-accent rounded-2xl shadow-sm hover:shadow-lg transition-all group">
-            <div className="w-16 h-16 rounded-[14px] bg-blue-50 text-blue-600 flex items-center justify-center text-3xl mb-6 group-hover:scale-110 transition-transform">
-              🏥
-            </div>
-            <h2 className="font-serif text-2xl font-medium text-page-text mb-3">I'm looking to hire</h2>
-            <p className="text-[14px] text-page-text3 mb-8 min-h-[42px]">Post job openings, search our verified candidate database, and manage interviews.</p>
-            <ul className="text-[13px] text-page-text2 space-y-3 font-medium">
-              <li className="flex gap-2.5">
-                <span className="text-page-accent">✓</span> Verified medical professionals
-              </li>
-              <li className="flex gap-2.5">
-                <span className="text-page-accent">✓</span> Advanced specialty filtering
-              </li>
-              <li className="flex gap-2.5">
-                <span className="text-page-accent">✓</span> Applicant tracking system
-              </li>
-            </ul>
-            <div className="mt-8 font-semibold text-blue-600 group-hover:translate-x-1 transition-transform inline-flex items-center gap-1.5">
-              Join as Employer <span aria-hidden="true">&rarr;</span>
-            </div>
-          </Link>
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
+          {HEALTHCARE_ROLES.map((role) => (
+            <button
+              key={role.id}
+              onClick={() => handleRoleSelect(role.id)}
+              disabled={loading && selectedRole !== role.id}
+              className="block p-6 bg-page-surface border-2 border-transparent hover:border-page-accent rounded-2xl shadow-sm hover:shadow-lg transition-all group text-left disabled:opacity-50"
+            >
+              <div className={`w-14 h-14 rounded-[12px] ${role.color} ${role.textColor} flex items-center justify-center text-3xl mb-5 group-hover:scale-110 transition-transform`}>
+                {role.emoji}
+              </div>
+              <h2 className="font-serif text-xl font-medium text-page-text mb-2">{role.label}</h2>
+              <p className="text-[13px] text-page-text3 mb-5 min-h-[36px]">{role.description}</p>
+              <ul className="text-[12px] text-page-text2 space-y-2 font-medium">
+                {role.benefits.slice(0, 2).map((benefit, idx) => (
+                  <li key={idx} className="flex gap-2">
+                    <span className="text-page-accent flex-shrink-0">✓</span>
+                    <span>{benefit}</span>
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-5 font-semibold text-page-accent group-hover:translate-x-1 transition-transform inline-flex items-center gap-1.5 text-sm">
+                {loading && selectedRole === role.id ? 'Setting up...' : <>Continue <span aria-hidden="true">&rarr;</span></>}
+              </div>
+            </button>
+          ))}
         </div>
 
         <div className="text-center text-[13px] text-page-text3">

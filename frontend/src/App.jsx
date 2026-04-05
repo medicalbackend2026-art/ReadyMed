@@ -9,6 +9,7 @@ import { HomePage } from './pages/HomePage'
 import { LoginPage } from './pages/auth/LoginPage'
 import { SignupPage } from './pages/auth/SignupPage'
 import { OTPVerifyPage } from './pages/auth/OTPVerifyPage'
+import { RoleSelectionPage } from './pages/RoleSelectionPage'
 
 import { JobFeedPage } from './pages/employee/JobFeedPage'
 import { JobDetailPage } from './pages/employee/JobDetailPage'
@@ -21,6 +22,11 @@ import { ManageApplicationsPage } from './pages/recruiter/ManageApplicationsPage
 import { JobCandidatesPage } from './pages/recruiter/JobCandidatesPage'
 import { RecruiterDashboardPage as RecDashboard } from './pages/recruiter/DashboardPage'
 import { CompanySetupPage } from './pages/recruiter/CompanySetupPage'
+
+// Services Page (for both roles)
+import { AllServicesPage } from './pages/AllServicesPage'
+
+
 
 // Layout Wrappers
 function PublicLayout() {
@@ -62,6 +68,8 @@ function AuthLayout() {
   )
 }
 
+
+
 export default function App() {
   return (
     <AppProvider>
@@ -77,7 +85,10 @@ export default function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
             <Route path="/otp-verify" element={<OTPVerifyPage />} />
+            <Route path="/role-selection" element={<RoleSelectionPage />} />
           </Route>
+
+
 
           {/* Employee Routes - PROTECTED */}
           <Route element={<ProtectedRoute allowedRoles={['employee']} />}>
@@ -86,6 +97,7 @@ export default function App() {
               <Route path="/jobs/:id" element={<JobDetailPage />} />
               <Route path="/dashboard" element={<EmpDashboard />} />
               <Route path="/profile-setup" element={<ProfileSetupPage />} />
+              <Route path="/services" element={<AllServicesPage />} />
             </Route>
           </Route>
 
@@ -98,6 +110,7 @@ export default function App() {
               <Route path="applications/:jobId" element={<JobCandidatesPage />} />
               <Route path="dashboard" element={<RecDashboard />} />
               <Route path="company-setup" element={<CompanySetupPage />} />
+              <Route path="services" element={<AllServicesPage />} />
             </Route>
           </Route>
         </Routes>

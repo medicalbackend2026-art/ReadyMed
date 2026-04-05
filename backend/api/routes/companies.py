@@ -11,6 +11,7 @@ from fastapi import APIRouter, Depends
 
 from core.firebase import firebase_db
 from core.security import get_current_user
+from google.cloud.firestore_v1 import SERVER_TIMESTAMP
 
 router = APIRouter(prefix="/companies", tags=["Companies"])
 
@@ -29,7 +30,7 @@ async def save_company_profile(body: dict, user: dict = Depends(get_current_user
         **body,
         "uid": user["uid"],
         "email": user["email"],
-        "updatedAt": firebase_db.SERVER_TIMESTAMP,
+        "updatedAt": SERVER_TIMESTAMP,
     }
     db.collection("companies").document(user["uid"]).set(data, merge=True)
     return {"success": True, "message": "Company profile saved"}

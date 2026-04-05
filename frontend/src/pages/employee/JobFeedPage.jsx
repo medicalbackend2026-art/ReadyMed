@@ -1,10 +1,11 @@
 import React, { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Badge } from '../../components/Badge'
 import { Button } from '../../components/Button'
 import { useAppContext } from '../../context/AppContext'
 
 export function JobFeedPage() {
+  const navigate = useNavigate()
   const { browseJobs: jobs, toggleSaveJob, isJobSaved } = useAppContext()
   const [searchTerm, setSearchTerm] = useState('')
   const [filters, setFilters] = useState({
@@ -226,6 +227,13 @@ export function JobFeedPage() {
       {/* JOB LISTINGS */}
       <main className="p-5 md:py-7 md:px-8">
         
+        <button 
+          onClick={() => navigate('/services')}
+          className="mb-6 inline-flex items-center gap-2 px-3 py-2 text-teal-600 hover:bg-teal-50 rounded-lg transition-colors font-medium text-sm"
+        >
+          ← Back to Services
+        </button>
+
         <div className="flex justify-between items-center mb-6">
           <div>
             <h2 className="font-serif text-2xl font-normal text-gray-900">Matched jobs for you</h2>

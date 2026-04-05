@@ -52,7 +52,10 @@ export function SignupPage() {
 
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
+  const [profession, setProfession] = useState('')
   const [orgName, setOrgName] = useState('')
+  const [orgType, setOrgType] = useState('')
+  const [city, setCity] = useState('')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
   const [password, setPassword] = useState('')
@@ -144,15 +147,16 @@ export function SignupPage() {
         lastName,
         email,
         phone,
-        role,
+        profession: role === 'employee' ? profession : undefined,
         orgName: role === 'recruiter' ? orgName : undefined,
+        orgType: role === 'recruiter' ? orgType : undefined,
+        city: role === 'recruiter' ? city : undefined,
+        role: role, // Save actual role (employee or recruiter)
       })
       
-      // 5. Navigate — skip profile-setup if profile already ≥75%
-      const profile = getUserProfile()
-      const alreadyFilled = getProfileCompletion(profile) >= 75
-      setCurrentUser({ name: fullName, role, email })
-      navigate(role === 'recruiter' ? '/recruiter/dashboard' : (alreadyFilled ? '/dashboard' : '/profile-setup'))
+      // 5. Navigate to services dashboard directly after signup
+      setCurrentUser({ name: fullName, role: role, email })
+      navigate('/services')
     } catch (err) {
       setError(err.message.replace('Firebase: ', '').replace(/ \(auth\/.*\)\.?/, ''))
     } finally {
@@ -173,13 +177,15 @@ export function SignupPage() {
         lastName: nameParts.slice(1).join(' ') || '',
         email: gUser.email || '',
         phone: gUser.phoneNumber || '',
-        role,
+        profession: role === 'employee' ? profession : undefined,
+        orgName: role === 'recruiter' ? orgName : undefined,
+        orgType: role === 'recruiter' ? orgType : undefined,
+        city: role === 'recruiter' ? city : undefined,
+        role: role, // Save actual role (employee or recruiter)
         photo: gUser.photoURL || null,
       })
-      const profile2 = getUserProfile()
-      const alreadyFilled2 = getProfileCompletion(profile2) >= 75
-      setCurrentUser({ name: gUser.displayName || '', role, email: gUser.email || '' })
-      navigate(role === 'recruiter' ? '/recruiter/dashboard' : (alreadyFilled2 ? '/dashboard' : '/profile-setup'))
+      setCurrentUser({ name: gUser.displayName || '', role: role, email: gUser.email || '' })
+      navigate('/services')
     } catch (err) {
       setError(err.message.replace('Firebase: ', '').replace(/ \(auth\/.*\)\.?/, ''))
     } finally {
@@ -302,14 +308,40 @@ export function SignupPage() {
                 </div>
               </div>
 
-              {role === 'recruiter' && (
+              {role === 'employee' && (
                 <FormInput
-                  label="Organisation / Hospital name"
-                  placeholder="Apollo Hospitals"
+                  label="Profession"
+                  placeholder="e.g., Doctor, Nurse, Pharmacist"
                   required
-                  value={orgName}
-                  onChange={(e) => setOrgName(e.target.value)}
+                  value={profession}
+                  onChange={(e) => setProfession(e.target.value)}
                 />
+              )}
+
+              {role === 'recruiter' && (
+                <>
+                  <FormInput
+                    label="Organisation / Hospital name"
+                    placeholder="Apollo Hospitals"
+                    required
+                    value={orgName}
+                    onChange={(e) => setOrgName(e.target.value)}
+                  />
+                  <FormInput
+                    label="Organisation type"
+                    placeholder="e.g., Hospital, Clinic, Pharmacy"
+                    required
+                    value={orgType}
+                    onChange={(e) => setOrgType(e.target.value)}
+                  />
+                  <FormInput
+                    label="City"
+                    placeholder="e.g., Mumbai, Delhi, Bangalore"
+                    required
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                  />
+                </>
               )}
 
               <FormInput

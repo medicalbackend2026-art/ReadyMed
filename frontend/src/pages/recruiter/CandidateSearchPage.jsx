@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Badge } from '../../components/Badge'
 import { Button } from '../../components/Button'
 import { useAppContext } from '../../context/AppContext'
@@ -98,6 +99,7 @@ function CandidateProfileModal({ isOpen, onClose, candidate, onInvite, isInvited
 }
 
 export function CandidateSearchPage() {
+  const navigate = useNavigate()
   const { candidates: localCandidates } = useAppContext()
   const [candidates, setCandidates] = useState([])
   const [loading, setLoading] = useState(true)
@@ -312,6 +314,13 @@ export function CandidateSearchPage() {
       {/* CANDIDATE LISTINGS */}
       <main className="p-5 md:py-7 md:px-8">
         
+        <button 
+          onClick={() => navigate('/recruiter/services')}
+          className="mb-6 inline-flex items-center gap-2 px-3 py-2 text-teal-600 hover:bg-teal-50 rounded-lg transition-colors font-medium text-sm"
+        >
+          ← Back to Services
+        </button>
+
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 gap-4">
           <div>
             <h2 className="font-serif text-2xl font-normal text-gray-900">Search candidates</h2>

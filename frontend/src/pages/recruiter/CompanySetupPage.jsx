@@ -13,6 +13,7 @@ export function CompanySetupPage() {
   const [orgType, setOrgType] = useState(saved.orgType || '')
   const [companyName, setCompanyName] = useState(saved.companyName || '')
   const [city, setCity] = useState(saved.city || '')
+  const [address, setAddress] = useState(saved.address || '')
   const [website, setWebsite] = useState(saved.website || '')
   const [regNumber, setRegNumber] = useState(saved.regNumber || '')
   const [description, setDescription] = useState(saved.description || '')
@@ -46,6 +47,7 @@ export function CompanySetupPage() {
           setOrgType(profile.orgType || '')
           setCompanyName(profile.companyName || '')
           setCity(profile.city || '')
+          setAddress(profile.address || '')
           setWebsite(profile.website || '')
           setRegNumber(profile.regNumber || '')
           setDescription(profile.description || '')
@@ -107,7 +109,7 @@ export function CompanySetupPage() {
 
   const toggleSection = (idx) => setActiveSection(prev => prev === idx ? -1 : idx)
 
-  const currentCompany = { companyName, orgType, city, website, regNumber, description, numBeds, estYear, specialities, contactName, contactDesignation, contactPhone, contactEmail, logo, regCert }
+  const currentCompany = { companyName, orgType, city, address, website, regNumber, description, numBeds, estYear, specialities, contactName, contactDesignation, contactPhone, contactEmail, logo, regCert }
   const completionPct = getCompanyCompletion(currentCompany)
   const completedCount = liveComplete.filter(Boolean).length
 
@@ -128,7 +130,7 @@ export function CompanySetupPage() {
   const saveSection = (idx) => {
     saveCompanyProfile(currentCompany)
     if (idx < 3) setActiveSection(idx + 1)
-    else setActiveSection(-1)
+    else handleFinish()
   }
 
   const handleFinish = async () => {
@@ -145,11 +147,11 @@ export function CompanySetupPage() {
         })
         if (!res.ok) { const err = await res.json(); throw new Error(err.error || 'Save failed') }
       }
-      navigate('/recruiter/services')
+      navigate('/recruiter/dashboard')
     } catch (err) {
       console.error('Company sync error:', err)
       setSaveError('Saved locally but could not sync to cloud. Continuing…')
-      setTimeout(() => navigate('/recruiter/services'), 2000)
+      setTimeout(() => navigate('/recruiter/dashboard'), 2000)
     } finally {
       setSaving(false)
     }
@@ -329,6 +331,9 @@ export function CompanySetupPage() {
                               </button>
                             ))}
                           </div>
+                        </div>
+                        <div className="mb-[18px]">
+                          <FormInput label="Full address" value={address} onChange={e => setAddress(e.target.value)} placeholder="e.g. 12, MG Road, Sector 4, Delhi – 110001" className="mb-0" />
                         </div>
                         <div className="grid sm:grid-cols-2 gap-3">
                           <FormInput label="City / location" value={city} onChange={e => setCity(e.target.value)} placeholder="e.g. Delhi NCR" className="mb-0" />

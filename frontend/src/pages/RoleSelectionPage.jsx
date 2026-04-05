@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { saveUserProfile } from '../hooks/useUserProfile'
+import { useAppContext } from '../context/AppContext'
 
 const HEALTHCARE_ROLES = [
   {
@@ -81,23 +82,29 @@ export function RoleSelectionPage() {
   const fromSignup = searchParams.get('from') === 'signup'
   const [selectedRole, setSelectedRole] = useState(null)
   const [loading, setLoading] = useState(false)
+  const { currentUser, setCurrentUser } = useAppContext()
 
   const handleRoleSelect = async (roleId) => {
     setSelectedRole(roleId)
     setLoading(true)
-    
+
     try {
+      const isRecruiter = roleId === 'hospital_owner'
+      const baseRole = isRecruiter ? 'recruiter' : 'employee'
+
       // Save the role to profile
       const userProfile = {
         healthcareRole: roleId,
+        role: baseRole
       }
       saveUserProfile(userProfile)
+      setCurrentUser({ ...currentUser, role: baseRole })
 
-      // Redirect to main dashboard based on role category. We will handle specific setups later.
-      if (roleId === 'hospital_owner') {
-        navigate('/recruiter/dashboard')
+      // Redirect to main services page based on role category.
+      if (isRecruiter) {
+        navigate('/recruiter/services')
       } else {
-        navigate('/dashboard')
+        navigate('/services')
       }
     } catch (error) {
       console.error('Error saving role:', error)

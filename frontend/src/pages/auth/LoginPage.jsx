@@ -1,86 +1,125 @@
-import React, { useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth'
+import React, { useState, useEffect } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { signInWithPopup, onAuthStateChanged } from 'firebase/auth'
 import { auth, googleProvider } from '../../firebase'
-import { FormInput } from '../../components/FormElements'
-import { Button } from '../../components/Button'
-import { getUserProfile, getProfileCompletion, saveUserProfile, getCompanyProfile, getCompanyCompletion } from '../../hooks/useUserProfile'
+import { saveUserProfile } from '../../hooks/useUserProfile'
 import { useAppContext } from '../../context/AppContext'
 
 export function LoginPage() {
-  const [searchParams] = useSearchParams()
-  const initialRole = searchParams.get('role') === 'recruiter' ? 'recruiter' : 'employee'
-  const [role, setRole] = useState(initialRole)
   const navigate = useNavigate()
   const { setCurrentUser } = useAppContext()
 
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const redirectAfterLogin = (r, firebaseUser = null) => {
-    let name = 'Guest';
-    let userEmail = '';
-    
-    if (r === 'recruiter') {
-      const company = getCompanyProfile()
-      name = company?.companyName || firebaseUser?.displayName || 'Employer'
-      userEmail = company?.email || firebaseUser?.email || email
-
-      // persist recruiter role/profile so service routing resolves correctly
-      saveUserProfile({
-        name,
-        email: userEmail,
-        role: 'recruiter',
-        orgName: company?.companyName || undefined,
-        orgType: company?.orgType || undefined,
-        city: company?.city || undefined,
-      })
-
-      setCurrentUser({ name, role: 'recruiter', email: userEmail })
-      navigate('/recruiter/services')
-    } else {
-      // If Google login, persist basic user info
-      if (firebaseUser) {
-        const nameParts = (firebaseUser.displayName || '').split(' ')
-        saveUserProfile({
-          name: firebaseUser.displayName || '',
-          firstName: nameParts[0] || '',
-          lastName: nameParts.slice(1).join(' ') || '',
-          email: firebaseUser.email || '',
-          photo: firebaseUser.photoURL || null,
-          role: role,
+  // If user is already logged in via Firebase, skip the login page
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (!firebaseUser) return
+      try {
+        const token = await firebaseUser.getIdToken()
+        const API = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+        const res = await fetch(`${API}/api/users/profile`, {
+          headers: { Authorization: `Bearer ${token}` }
         })
+        if (res.ok) {
+          const { profile } = await res.json()
+          if (profile?.role && profile.role !== 'new_user') {
+            setCurrentUser({ name: profile.name || firebaseUser.displayName, role: profile.role, email: profile.email || firebaseUser.email })
+            saveUserProfile(profile)
+            navigate(profile.role === 'recruiter' ? '/recruiter/services' : '/services', { replace: true })
+          }
+        }
+      } catch (e) {
+        // If cloud check fails, stay on login — user can sign in manually
       }
-      const profile = getUserProfile()
-      name = profile?.name || firebaseUser?.displayName || 'User'
-      userEmail = profile?.email || firebaseUser?.email || email
-      setCurrentUser({ name, role: role, email: userEmail })
-      navigate('/services')
-    }
-  }
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setError('')
-    setLoading(true)
-    try {
-      const cred = await signInWithEmailAndPassword(auth, email, password)
-      redirectAfterLogin(role, cred.user)
-    } catch (err) {
-      setError(err.message.replace('Firebase: ', '').replace(/ \(auth\/.*\)\.?/, ''))
-    } finally {
-      setLoading(false)
-    }
-  }
+    })
+    return () => unsub()
+  }, [])
 
   const handleGoogle = async () => {
     setError('')
     setLoading(true)
     try {
       const result = await signInWithPopup(auth, googleProvider)
-      redirectAfterLogin(role, result.user)
+      const firebaseUser = result.user
+      const nameParts = (firebaseUser.displayName || '').split(' ')
+      const name = firebaseUser.displayName || 'User'
+      const userEmail = firebaseUser.email || ''
+
+      // Save basic info locally
+      saveUserProfile({
+        name,
+        firstName: nameParts[0] || '',
+        lastName: nameParts.slice(1).join(' ') || '',
+        email: userEmail,
+        photo: firebaseUser.photoURL || null,
+      })
+
+      // Check cloud profile — if role is already set, skip role-selection
+      let cloudRole = null
+      let profileComplete = false
+      try {
+        const token = await firebaseUser.getIdToken()
+        const API = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+        const headers = { Authorization: `Bearer ${token}` }
+
+        const res = await fetch(`${API}/api/users/profile`, { headers })
+        if (res.ok) {
+          const { profile } = await res.json()
+          if (profile?.role && profile.role !== 'new_user') {
+            cloudRole = profile.role
+            saveUserProfile(profile)
+
+            if (cloudRole === 'employee') {
+              // Employee profile completion (same 7-field logic as useUserProfile.js)
+              const checks = [
+                !!profile.profession,
+                !!(profile.experiences?.length > 0 && profile.experiences[0].jobTitle),
+                !!(profile.qualifications?.length > 0 && profile.qualifications[0].degree),
+                !!(profile.certifications?.length > 0 && profile.certifications[0].regNumber),
+                !!(profile.skills?.length > 0),
+                !!(profile.currentSalary || profile.expectedSalary),
+                !!(profile.resumeFilename),
+              ]
+              const pct = Math.round((checks.filter(Boolean).length / 7) * 100)
+              profileComplete = pct >= 75
+            } else if (cloudRole === 'recruiter') {
+              // Recruiter: check company profile too
+              try {
+                const compRes = await fetch(`${API}/api/companies/profile`, { headers })
+                if (compRes.ok) {
+                  const { profile: co } = await compRes.json()
+                  let score = 0
+                  if (co?.companyName) score += 25
+                  if (co?.orgType) score += 15
+                  if (co?.description) score += 20
+                  if (co?.contactName) score += 20
+                  if (co?.logo) score += 20
+                  profileComplete = score >= 75
+                }
+              } catch (_) { /* ignore */ }
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('Cloud profile check failed:', e)
+      }
+
+      if (cloudRole) {
+        setCurrentUser({ name, role: cloudRole, email: userEmail })
+        if (profileComplete) {
+          // Profile is solid — go straight to the services dashboard
+          navigate(cloudRole === 'recruiter' ? '/recruiter/services' : '/services')
+        } else {
+          // Profile incomplete — go to setup so they can finish
+          navigate(cloudRole === 'recruiter' ? '/recruiter/company-setup' : '/profile-setup')
+        }
+      } else {
+        // New user — ask who they are
+        setCurrentUser({ name, role: 'new_user', email: userEmail })
+        navigate('/role-selection')
+      }
     } catch (err) {
       setError(err.message.replace('Firebase: ', '').replace(/ \(auth\/.*\)\.?/, ''))
     } finally {
@@ -121,33 +160,7 @@ export function LoginPage() {
       <div className="flex items-center justify-center p-8 md:p-12">
         <div className="w-full max-w-[400px]">
           <h1 className="font-serif text-[28px] text-gray-900 mb-1.5">Log in to ReadyMD</h1>
-          <p className="text-sm text-gray-500 mb-7">Enter your credentials to access your account.</p>
-
-          {/* Role Toggle */}
-          <div className="relative flex p-1 bg-gray-100 rounded-lg mb-8">
-            <div
-              className="absolute top-1 bottom-1 w-[calc(50%-4px)] bg-white rounded-md shadow-sm transition-transform duration-300 ease-in-out"
-              style={{ transform: role === 'recruiter' ? 'translateX(calc(100% + 4px))' : 'translateX(0)' }}
-            />
-            <button
-              type="button"
-              onClick={() => setRole('employee')}
-              className={`relative z-10 flex-1 py-2 text-[13px] font-semibold rounded-md transition-colors duration-200 ${
-                role === 'employee' ? 'text-gray-900' : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              Professional
-            </button>
-            <button
-              type="button"
-              onClick={() => setRole('recruiter')}
-              className={`relative z-10 flex-1 py-2 text-[13px] font-semibold rounded-md transition-colors duration-200 ${
-                role === 'recruiter' ? 'text-gray-900' : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              Employer
-            </button>
-          </div>
+          <p className="text-sm text-gray-500 mb-7">Sign in to access your account.</p>
 
           {/* Google Sign In */}
           <button
@@ -155,63 +168,29 @@ export function LoginPage() {
             disabled={loading}
             className="w-full py-[11px] border border-border rounded-lg text-sm font-medium text-gray-700 bg-white flex items-center justify-center gap-2 hover:bg-gray-50 hover:border-gray-200 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            <svg width="18" height="18" viewBox="0 0 18 18">
-              <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 01-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/>
-              <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z"/>
-              <path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.997 8.997 0 000 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/>
-              <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/>
-            </svg>
-            Continue with Google
+            {loading ? 'Logging in...' : (
+              <>
+                <svg width="18" height="18" viewBox="0 0 18 18">
+                  <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 01-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" />
+                  <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z" />
+                  <path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.997 8.997 0 000 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" />
+                  <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" />
+                </svg>
+                Continue with Google
+              </>
+            )}
           </button>
-
-          <div className="flex items-center gap-3 my-5 text-xs text-gray-400 before:content-[''] before:flex-1 before:h-px before:bg-border after:content-[''] after:flex-1 after:h-px after:bg-border">
-            or log in with email
-          </div>
 
           {/* Error */}
           {error && (
-            <div className="mb-4 px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-600">
+            <div className="mt-4 px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-600">
               {error}
             </div>
           )}
 
-          <form onSubmit={handleSubmit}>
-            <FormInput
-              label="Email address"
-              placeholder="sneha@example.com"
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-            <FormInput
-              label="Password"
-              placeholder="Enter your password"
-              type="password"
-              className="mb-0"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-
-            <div className="flex justify-between items-center -mt-1.5 mb-5">
-              <label className="flex items-center gap-1.5 text-[13px] text-gray-500 cursor-pointer">
-                <input type="checkbox" defaultChecked className="w-[15px] h-[15px] accent-teal-600" />
-                Remember me
-              </label>
-              <Link to="#" className="text-[13px] text-teal-600 font-medium hover:underline">
-                Forgot password?
-              </Link>
-            </div>
-
-            <Button type="submit" variant="primary" size="lg" fullWidth disabled={loading}>
-              {loading ? 'Logging in…' : 'Log in'}
-            </Button>
-          </form>
-
           <div className="text-center text-[13px] text-gray-500 mt-6">
             Don't have an account?{' '}
-            <Link to={`/signup?role=${role}`} className="font-semibold text-teal-600 hover:underline">Sign up free</Link>
+            <Link to="/signup" className="font-semibold text-teal-600 hover:underline">Sign up free</Link>
           </div>
         </div>
       </div>

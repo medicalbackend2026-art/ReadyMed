@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getUserProfile, getCompanyProfile } from '../hooks/useUserProfile'
+import { getUserProfile, getCompanyProfile, saveUserProfile } from '../hooks/useUserProfile'
+import { useAppContext } from '../context/AppContext'
 
 const SERVICE_CATEGORIES = [
   {
@@ -34,9 +35,9 @@ const SERVICE_CATEGORIES = [
         ]
       },
       {
-        id: 'hire-staff',
-        name: 'Hire Staff',
-        description: 'Nurses, ward boys, receptionists, lab techs — verified, WhatsApp-matched within 24 hrs.',
+        id: 'jobs-and-hiring',
+        name: 'Jobs & Hiring',
+        description: 'Apply for verified medical positions or hire staff (nurses, tech, receptionists) — matched within 24 hrs.',
         svg: (
           <div className="w-12 h-12 bg-blue-100/50 rounded-2xl flex items-center justify-center text-blue-500">
             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -44,7 +45,7 @@ const SERVICE_CATEGORIES = [
             </svg>
           </div>
         ),
-        buttonText: 'Post a job →'
+        buttonText: 'Explore Jobs / Hire →'
       },
       {
         id: 'locum-doctor',
@@ -393,9 +394,11 @@ export function AllServicesPage() {
   const companyProfile = getCompanyProfile()
   const isEmployer = userProfile?.role === 'recruiter' || !!companyProfile?.companyName
   const [activeCategory, setActiveCategory] = useState('all')
+  const [showHiringModal, setShowHiringModal] = useState(false)
+  const { currentUser, setCurrentUser } = useAppContext()
 
   const SERVICE_ROUTES = {
-    'hire-staff': { employer: '/recruiter/company-setup', professional: '/profile-setup' },
+    'jobs-and-hiring': { employer: '/recruiter/company-setup', professional: '/profile-setup' },
     'locum-doctor': { employer: '/recruiter/company-setup', professional: '/profile-setup' },
     'clinic-space': { employer: '#coming-soon', professional: '#coming-soon' },
     'full-clinic-setup': { employer: '#coming-soon', professional: '#coming-soon' },
@@ -421,6 +424,11 @@ export function AllServicesPage() {
   }
 
   const handleServiceClick = (serviceId) => {
+    if (serviceId === 'jobs-and-hiring') {
+      setShowHiringModal(true)
+      return
+    }
+
     const route = SERVICE_ROUTES[serviceId]
     if (!route) return
 
@@ -448,21 +456,20 @@ export function AllServicesPage() {
   }
 
   const allServicesCount = 22
-  
+
   return (
     <div className="min-h-screen bg-[#f8f9fa] font-sans flex text-[#1e293b]">
       {/* Sidebar */}
       <div className="w-64 bg-[#f8f9fa] border-r border-gray-200/60 p-6 sticky top-0 h-screen overflow-y-auto shrink-0 flex flex-col justify-between hidden md:flex z-20">
         <div>
           <div className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-4 ml-2">Services</div>
-          
+
           <button
             onClick={() => scrollToCategory('all')}
-            className={`w-full flex items-center justify-between px-3 py-3 rounded-xl transition-all text-[13px] font-semibold mb-6 ${
-              activeCategory === 'all'
+            className={`w-full flex items-center justify-between px-3 py-3 rounded-xl transition-all text-[13px] font-semibold mb-6 ${activeCategory === 'all'
                 ? 'bg-amber-100 text-amber-900 shadow-sm border border-amber-200'
                 : 'text-gray-600 hover:text-gray-900 hover:bg-white border border-transparent hover:border-gray-200/60'
-            }`}
+              }`}
           >
             <div className="flex items-center gap-3">
               <div className="p-1 rounded bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-xs">
@@ -484,11 +491,10 @@ export function AllServicesPage() {
               <button
                 key={category.id}
                 onClick={() => scrollToCategory(category.id)}
-                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all text-[13px] font-medium ${
-                  activeCategory === category.id
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all text-[13px] font-medium ${activeCategory === category.id
                     ? 'bg-white text-gray-900 shadow-sm border border-gray-200'
                     : 'text-gray-500 hover:text-gray-800 hover:bg-white border border-transparent hover:border-gray-200/60'
-                }`}
+                  }`}
               >
                 <div className="flex items-center gap-3">
                   <div className={`p-1.5 rounded-lg ${activeCategory === category.id ? 'bg-gray-50' : ''}`}>
@@ -505,15 +511,21 @@ export function AllServicesPage() {
             ))}
           </div>
         </div>
-        
+
         {/* User profile section if logged in */}
         {(userProfile?.name || companyProfile?.companyName) ? (
           <div className="mt-8 pt-6 border-t border-gray-200/60">
             <div className="text-[13px] font-bold text-gray-900">{userProfile?.name || companyProfile?.companyName}</div>
-            <div className="text-[11px] text-gray-500 mt-0.5">{userProfile?.specialty || 'Professional'}</div>
+            <div className="text-[11px] text-gray-500 mt-0.5">{userProfile?.profession || userProfile?.specialty || (isEmployer ? 'Healthcare Facility' : 'Healthcare Professional')}</div>
             <div className="text-[9px] text-teal-700 mt-2 uppercase tracking-widest font-bold bg-teal-50 inline-block px-2 py-1 rounded-md border border-teal-100/50">
-               {isEmployer ? 'Employer Account' : 'Professional Account'}
+              {isEmployer ? 'Employer Account' : 'Professional Account'}
             </div>
+            <button 
+              onClick={() => navigate('/role-selection?from=dashboard')}
+              className="mt-4 text-[11px] text-blue-600 hover:text-blue-800 hover:underline font-medium block"
+            >
+              Change Profession / Role
+            </button>
           </div>
         ) : null}
       </div>
@@ -521,22 +533,22 @@ export function AllServicesPage() {
       {/* Main Content */}
       <div className="flex-1 p-6 md:p-8 lg:p-14 overflow-y-auto h-screen relative">
         <div className="max-w-7xl mx-auto">
-          
+
           <div className="flex flex-col xl:flex-row gap-8 xl:gap-16 mb-12 items-start">
             <div className="xl:w-[55%] pt-4">
               <div className="flex items-center gap-2 mb-6">
                 <span className="inline-block w-2.5 h-2.5 rounded-full bg-teal-600 shadow-[0_0_12px_rgba(13,148,136,0.6)]"></span>
                 <span className="text-[10px] font-bold text-teal-800 uppercase tracking-[0.2em]">ReadyMD Platform</span>
               </div>
-              
+
               <h1 className="text-[2.75rem] md:text-[3.25rem] font-serif text-[#0f172a] leading-[1.1] mb-6 tracking-tight">
-                Everything to run &<br/>grow your clinic
+                Everything to run &<br />grow your clinic
               </h1>
               <p className="text-[16px] text-gray-500 max-w-xl leading-relaxed">
                 22 services across operations, equipment, digital, software and compliance — purpose-built for Indian doctors.
               </p>
             </div>
-            
+
             <div className="xl:w-[45%] w-full grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-2 gap-4 mt-6 xl:mt-0">
               <div className="bg-white rounded-[1.25rem] p-5 border border-gray-200/60 shadow-xs flex flex-col items-center justify-center text-center transition-transform hover:-translate-y-1 duration-300">
                 <div className="text-3xl font-serif font-medium text-gray-800">22<span className="text-gray-300 text-xl">+</span></div>
@@ -608,22 +620,22 @@ export function AllServicesPage() {
                       <div className="flex flex-col h-full">
                         <div className="flex items-start justify-between gap-4 mb-5">
                           {service.svg}
-                          
+
                           {service.badge && (
                             <div className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-100/50 px-3 py-1 rounded-full whitespace-nowrap shadow-xs shadow-amber-900/5">
                               {service.badge}
                             </div>
                           )}
                         </div>
-                        
+
                         <h3 className="text-[17px] font-serif text-gray-900 mb-2.5 font-medium">{service.name}</h3>
-                        
+
                         <div className={`flex ${service.spaces ? 'flex-col lg:flex-row gap-8' : 'flex-col'} flex-1`}>
                           <div className={`${service.spaces ? 'lg:w-[45%]' : 'w-full'} flex flex-col h-full`}>
                             <p className="text-[14px] text-gray-500 leading-relaxed mb-6 font-light">
                               {service.description}
                             </p>
-                            
+
                             {service.tags && (
                               <div className="flex flex-wrap gap-2 mb-6 mt-auto">
                                 {service.tags.map((tag, i) => (
@@ -664,9 +676,9 @@ export function AllServicesPage() {
                             ))}
                           </div>
                         )}
-                        
+
                         <div className="mt-auto pt-4 flex items-center text-[12px] font-bold text-teal-700/80 group-hover:text-amber-600 transition-colors uppercase tracking-wide">
-                          {service.buttonText} 
+                          {service.buttonText}
                           <svg className="w-4 h-4 ml-1 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
                           </svg>
@@ -680,6 +692,57 @@ export function AllServicesPage() {
           </div>
         </div>
       </div>
+
+      {/* Hiring Selection Modal */}
+      {showHiringModal && (
+        <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-8 shadow-2xl relative">
+            <button
+              onClick={() => setShowHiringModal(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 p-2"
+            >
+              ✕
+            </button>
+
+            <h2 className="text-2xl font-serif text-gray-900 mb-2 font-medium text-center">Jobs & Hiring</h2>
+            <p className="text-sm text-gray-500 text-center mb-8">What would you like to do on ReadyMD today?</p>
+
+            <div className="grid md:grid-cols-2 gap-4">
+              <button
+                onClick={() => {
+                  saveUserProfile({ role: 'employee' })
+                  setCurrentUser({ ...currentUser, role: 'employee' })
+                  setShowHiringModal(false)
+                  setTimeout(() => navigate('/profile-setup', { state: { editMode: true } }), 0)
+                }}
+                className="group p-6 bg-white border-2 border-gray-100 hover:border-teal-500 rounded-xl text-left transition-all hover:bg-teal-50/50 flex flex-col items-center justify-center"
+              >
+                <div className="w-12 h-12 bg-teal-100/50 rounded-full flex items-center justify-center text-teal-600 mb-4 group-hover:scale-110 transition-transform text-2xl">
+                  👨‍⚕️
+                </div>
+                <div className="font-semibold text-gray-900 mb-1">Apply for Jobs</div>
+                <div className="text-xs text-gray-500 text-center">I am a healthcare professional looking for work</div>
+              </button>
+
+              <button
+                onClick={() => {
+                  saveUserProfile({ role: 'recruiter' })
+                  setCurrentUser({ ...currentUser, role: 'recruiter' })
+                  setShowHiringModal(false)
+                  setTimeout(() => navigate('/recruiter/company-setup', { state: { editMode: true } }), 0)
+                }}
+                className="group p-6 bg-white border-2 border-gray-100 hover:border-amber-500 rounded-xl text-left transition-all hover:bg-amber-50/50 flex flex-col items-center justify-center"
+              >
+                <div className="w-12 h-12 bg-amber-100/50 rounded-full flex items-center justify-center text-amber-600 mb-4 group-hover:scale-110 transition-transform text-2xl">
+                  🏥
+                </div>
+                <div className="font-semibold text-gray-900 mb-1">Hire Staff</div>
+                <div className="text-xs text-gray-500 text-center">I want to hire medical staff for my clinic/hospital</div>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

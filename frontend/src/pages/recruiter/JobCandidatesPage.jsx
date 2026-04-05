@@ -5,12 +5,10 @@ import { auth } from '../../firebase'
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
-const STAGES = ['New', 'Reviewed', 'Shortlisted', 'Interviewing', 'Offer sent', 'Rejected']
+const STAGES = ['New', 'Interviewing', 'Offer sent', 'Rejected']
 
 const stageColors = {
   New: 'bg-gray-100 text-gray-700',
-  Reviewed: 'bg-blue-50 text-blue-700',
-  Shortlisted: 'bg-teal-50 text-teal-700',
   Interviewing: 'bg-amber-50 text-amber-700',
   'Offer sent': 'bg-green-50 text-green-700',
   Rejected: 'bg-red-50 text-red-600',
@@ -104,10 +102,14 @@ export function JobCandidatesPage() {
       </button>
     )
     switch (status) {
-      case 'New': return [btn('✓ Review', 'Reviewed', 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100'), btn('✕ Reject', 'Rejected', 'border-red-100 bg-white text-red-600 hover:bg-red-50')]
-      case 'Reviewed': return [btn('Shortlist →', 'Shortlisted', 'border-teal-200 bg-teal-50 text-teal-700 hover:bg-teal-100'), btn('Pass', 'Rejected', 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50')]
-      case 'Shortlisted': return [btn('Schedule Interview', 'Interviewing', 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100')]
-      case 'Interviewing': return [btn('Extend Offer', 'Offer sent', 'border-green-200 bg-green-50 text-green-700 hover:bg-green-100'), btn('Reject', 'Rejected', 'border-red-100 bg-white text-red-600 hover:bg-red-50')]
+      case 'New': return [
+        btn('Schedule Interview', 'Interviewing', 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100'),
+        btn('✕ Reject', 'Rejected', 'border-red-100 bg-white text-red-600 hover:bg-red-50')
+      ]
+      case 'Interviewing': return [
+        btn('Extend Offer', 'Offer sent', 'border-green-200 bg-green-50 text-green-700 hover:bg-green-100'),
+        btn('Reject', 'Rejected', 'border-red-100 bg-white text-red-600 hover:bg-red-50')
+      ]
       default: return []
     }
   }
@@ -115,8 +117,6 @@ export function JobCandidatesPage() {
   // Pipeline grouped by status
   const pipeline = {
     New: jobApps.filter(a => a.status === 'New'),
-    Reviewed: jobApps.filter(a => a.status === 'Reviewed'),
-    Shortlisted: jobApps.filter(a => a.status === 'Shortlisted'),
     Interviewing: jobApps.filter(a => a.status === 'Interviewing'),
     Decision: jobApps.filter(a => ['Offer sent', 'Rejected'].includes(a.status)),
   }
@@ -328,15 +328,13 @@ export function JobCandidatesPage() {
         </div>
       ) : (
         /* ── Pipeline View ── */
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 items-start">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 items-start">
           {Object.entries(pipeline).map(([stage, apps]) => (
-            <div key={stage} className="bg-gray-50 border border-border rounded-xl p-3.5 min-h-[260px]">
-              <div className="flex justify-between items-center mb-3">
-                <div className="text-[13px] font-semibold text-gray-700">{stage === 'Decision' ? 'Decision' : stage}</div>
-                <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
+            <div key={stage} className="bg-gray-50 border border-border rounded-xl p-4 min-h-[300px]">
+              <div className="flex justify-between items-center mb-4">
+                <div className="text-[14px] font-semibold text-gray-700">{stage === 'Decision' ? 'Decision' : stage}</div>
+                <span className={`text-[12px] font-bold px-2.5 py-0.5 rounded-full ${
                   stage === 'New' ? 'bg-gray-200 text-gray-600'
-                  : stage === 'Reviewed' ? 'bg-blue-50 text-blue-700'
-                  : stage === 'Shortlisted' ? 'bg-teal-50 text-teal-700'
                   : stage === 'Interviewing' ? 'bg-amber-50 text-amber-700'
                   : 'bg-pink-50 text-pink-700'
                 }`}>{apps.length}</span>

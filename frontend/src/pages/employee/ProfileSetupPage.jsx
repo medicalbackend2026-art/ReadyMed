@@ -15,7 +15,18 @@ export function ProfileSetupPage() {
   const isFirstLogin = !location.state?.editMode
   const profile = getUserProfile() || {}
 
-  const [selectedProf, setSelectedProf] = useState(profile.profession || '')
+  const getRoleMapping = (roleId) => {
+    switch (roleId) {
+      case 'doctor': return 'Doctor'
+      case 'nurse': return 'Nurse'
+      case 'physicist': return 'Medical Physicist'
+      case 'pharmacist': return 'Pharmacist'
+      case 'hospital_owner': return 'Hospital Admin'
+      default: return roleId ? roleId.charAt(0).toUpperCase() + roleId.slice(1) : ''
+    }
+  }
+  const defaultProf = profile.profession || getRoleMapping(profile.healthcareRole)
+  const [selectedProf, setSelectedProf] = useState(defaultProf)
   const [skills, setSkills] = useState(profile.skills || [])
   const [experiences, setExperiences] = useState(
     profile.experiences?.length ? profile.experiences : [{ id: 1, jobTitle: '', hospital: '', department: '', employmentType: 'Full-time', startDate: '', endDate: '', duties: '' }]
@@ -55,7 +66,12 @@ export function ProfileSetupPage() {
         const { profile: p } = await res.json()
         if (p) {
           saveUserProfile(p)
-          if (p.profession) setSelectedProf(p.profession)
+          if (p.profession) {
+            setSelectedProf(p.profession)
+          } else if (p.healthcareRole) {
+            // Cloud healthcareRole is the source of truth (saved when user selected their role)
+            setSelectedProf(getRoleMapping(p.healthcareRole))
+          }
           if (p.skills?.length) setSkills(p.skills)
           if (p.experiences?.length) setExperiences(p.experiences)
           if (p.qualifications?.length) setQualifications(p.qualifications)
@@ -99,7 +115,8 @@ export function ProfileSetupPage() {
     { icon: '🩺', name: 'Doctor' },
     { icon: '👩‍⚕️', name: 'Nurse' },
     { icon: '💊', name: 'Pharmacist' },
-    { icon: '🔬', name: 'Lab Technician' },
+    { icon: '🔬', name: 'Medical Physicist' },
+    { icon: '🧪', name: 'Lab Technician' },
     { icon: '🦴', name: 'Physiotherapist' },
     { icon: '📡', name: 'Radiologist' },
     { icon: '🚑', name: 'Paramedic' },
@@ -180,7 +197,7 @@ export function ProfileSetupPage() {
               body: JSON.stringify({ resumeFilename: file.name, resumeUrl: data.secure_url }),
             })
           }
-        } catch {}
+        } catch { }
       } else {
         console.error('Cloudinary upload failed:', data)
         saveUserProfile({ resumeFilename: file.name })
@@ -353,7 +370,7 @@ export function ProfileSetupPage() {
   if (loadingFromCloud) {
     return (
       <div className="flex items-center justify-center min-h-[60vh] text-sm text-gray-400 gap-2">
-        <svg className="animate-spin w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+        <svg className="animate-spin w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" /></svg>
         Loading your profile…
       </div>
     )
@@ -362,6 +379,17 @@ export function ProfileSetupPage() {
   return (
     <div className="max-w-[1100px] mx-auto px-6 py-10 pb-20 font-sans">
 
+<<<<<<< Updated upstream
+=======
+      {/* Back button */}
+      <button
+        onClick={() => navigate('/services')}
+        className="mb-6 inline-flex items-center gap-2 px-3 py-2 text-teal-600 hover:bg-teal-50 rounded-lg transition-colors font-medium text-sm"
+      >
+        ← Back to Services
+      </button>
+
+>>>>>>> Stashed changes
       {/* Page title */}
       <div className="mb-8">
         <h1 className="font-serif text-[26px] text-gray-900 mb-1">Complete your profile</h1>
@@ -380,16 +408,15 @@ export function ProfileSetupPage() {
                   key={idx}
                   type="button"
                   onClick={() => setActiveSection(idx)}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-colors text-sm ${
-                    activeSection === idx
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-colors text-sm ${activeSection === idx
                       ? 'bg-teal-50 text-teal-700 font-semibold'
                       : 'text-gray-700 hover:bg-gray-50'
-                  }`}
+                    }`}
                 >
                   {/* Circle indicator */}
                   {liveComplete[idx] ? (
                     <span className="w-5 h-5 rounded-full bg-teal-600 flex items-center justify-center shrink-0">
-                      <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 3" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 3" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
                     </span>
                   ) : activeSection === idx ? (
                     <span className="w-5 h-5 rounded-full border-2 border-teal-600 shrink-0" />
@@ -446,13 +473,12 @@ export function ProfileSetupPage() {
                 key={idx}
                 type="button"
                 onClick={() => setActiveSection(idx)}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-full border text-xs font-medium whitespace-nowrap transition-colors shrink-0 ${
-                  activeSection === idx
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-full border text-xs font-medium whitespace-nowrap transition-colors shrink-0 ${activeSection === idx
                     ? 'border-teal-600 bg-teal-50 text-teal-700'
                     : liveComplete[idx]
-                    ? 'border-teal-200 bg-teal-50 text-teal-600'
-                    : 'border-border bg-white text-gray-600'
-                }`}
+                      ? 'border-teal-200 bg-teal-50 text-teal-600'
+                      : 'border-border bg-white text-gray-600'
+                  }`}
               >
                 {liveComplete[idx] && <span className="text-teal-600">✓</span>}
                 {sec.title}
@@ -499,7 +525,7 @@ export function ProfileSetupPage() {
                   {/* Step circle */}
                   {isDone ? (
                     <span className="w-8 h-8 rounded-full bg-teal-600 flex items-center justify-center shrink-0">
-                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7l3 3 5-5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7l3 3 5-5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
                     </span>
                   ) : (
                     <span className={`w-8 h-8 rounded-full border-2 flex items-center justify-center shrink-0 text-sm font-bold ${isOpen ? 'border-teal-600 text-teal-600' : 'border-gray-300 text-gray-400'}`}>
@@ -536,7 +562,7 @@ export function ProfileSetupPage() {
                       width="16" height="16" viewBox="0 0 16 16" fill="none"
                       className={`text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
                     >
-                      <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   </div>
                 </button>
@@ -553,11 +579,10 @@ export function ProfileSetupPage() {
                             key={prof.name}
                             type="button"
                             onClick={() => setSelectedProf(prof.name)}
-                            className={`p-4 border-2 rounded-xl text-center transition-all ${
-                              selectedProf === prof.name
+                            className={`p-4 border-2 rounded-xl text-center transition-all ${selectedProf === prof.name
                                 ? 'border-pink-600 bg-pink-50'
                                 : 'border-border hover:border-pink-200 hover:bg-pink-50'
-                            }`}
+                              }`}
                           >
                             <div className="text-[26px] mb-1.5">{prof.icon}</div>
                             <div className="text-[13px] font-semibold text-gray-900">{prof.name}</div>
@@ -584,7 +609,7 @@ export function ProfileSetupPage() {
                             </div>
                             <div className="grid sm:grid-cols-2 gap-3">
                               <FormInput label="Department" value={exp.department} onChange={e => updateExperience(exp.id, 'department', e.target.value)} />
-                              <FormSelect label="Employment type" value={exp.employmentType} onChange={e => updateExperience(exp.id, 'employmentType', e.target.value)} options={[{label:'Full-time',value:'Full-time'},{label:'Part-time',value:'Part-time'},{label:'Contract',value:'Contract'},{label:'Locum',value:'Locum'}]} />
+                              <FormSelect label="Employment type" value={exp.employmentType} onChange={e => updateExperience(exp.id, 'employmentType', e.target.value)} options={[{ label: 'Full-time', value: 'Full-time' }, { label: 'Part-time', value: 'Part-time' }, { label: 'Contract', value: 'Contract' }, { label: 'Locum', value: 'Locum' }]} />
                             </div>
                             <div className="grid sm:grid-cols-2 gap-3">
                               <FormInput label="Start date" type="month" value={exp.startDate} onChange={e => updateExperience(exp.id, 'startDate', e.target.value)} />
@@ -639,7 +664,7 @@ export function ProfileSetupPage() {
                               }} className="text-xs text-gray-400 hover:text-red-500">🗑 Delete</button>
                             </div>
                             <div className="grid sm:grid-cols-2 gap-3">
-                              <FormSelect label="License type" value={cert.licenseType} onChange={e => updateCertification(cert.id, 'licenseType', e.target.value)} options={[{label:'NMC Registration',value:'NMC'},{label:'State Medical Council',value:'State'},{label:'Indian Nursing Council',value:'INC'},{label:'Other',value:'Other'}]} />
+                              <FormSelect label="License type" value={cert.licenseType} onChange={e => updateCertification(cert.id, 'licenseType', e.target.value)} options={[{ label: 'NMC Registration', value: 'NMC' }, { label: 'State Medical Council', value: 'State' }, { label: 'Indian Nursing Council', value: 'INC' }, { label: 'Other', value: 'Other' }]} />
                               <FormInput label="Registration number" value={cert.regNumber} onChange={e => updateCertification(cert.id, 'regNumber', e.target.value)} />
                             </div>
                             <div className="grid sm:grid-cols-2 gap-3">
@@ -685,11 +710,11 @@ export function ProfileSetupPage() {
                           </div>
                         </div>
                         <div className="grid sm:grid-cols-2 gap-3 mt-3.5">
-                          <FormSelect label="Preferred job type" value={preferredJobType} onChange={e => setPreferredJobType(e.target.value)} options={[{label:'Full-time',value:'Full-time'},{label:'Part-time',value:'Part-time'},{label:'Contract / Locum',value:'Contract'},{label:'Any',value:'Any'}]} />
+                          <FormSelect label="Preferred job type" value={preferredJobType} onChange={e => setPreferredJobType(e.target.value)} options={[{ label: 'Full-time', value: 'Full-time' }, { label: 'Part-time', value: 'Part-time' }, { label: 'Contract / Locum', value: 'Contract' }, { label: 'Any', value: 'Any' }]} />
                           <FormInput label="Preferred city" value={preferredCity} onChange={e => setPreferredCity(e.target.value)} />
                         </div>
                         <div className="mb-0 max-w-[220px]">
-                          <FormSelect label="Open to remote / teleconsultation?" value={openToRemote} onChange={e => setOpenToRemote(e.target.value)} options={[{label:'No',value:'No'},{label:'Yes',value:'Yes'}]} />
+                          <FormSelect label="Open to remote / teleconsultation?" value={openToRemote} onChange={e => setOpenToRemote(e.target.value)} options={[{ label: 'No', value: 'No' }, { label: 'Yes', value: 'Yes' }]} />
                         </div>
                       </div>
                     )}
@@ -702,8 +727,8 @@ export function ProfileSetupPage() {
                           <FormInput label="Expected salary (₹ per year)" placeholder="e.g. 18,00,000" value={expectedSalary} onChange={e => setExpectedSalary(e.target.value)} />
                         </div>
                         <div className="grid sm:grid-cols-2 gap-3 mt-1 [&>div]:mb-0">
-                          <FormSelect label="Notice period" value={noticePeriod} onChange={e => setNoticePeriod(e.target.value)} options={[{label:'Immediate',value:'0'},{label:'15 days',value:'15'},{label:'30 days',value:'30'},{label:'60 days',value:'60'}]} />
-                          <FormSelect label="Open to relocation?" value={openToRelocation} onChange={e => setOpenToRelocation(e.target.value)} options={[{label:'Yes',value:'Yes'},{label:'No',value:'No'}]} />
+                          <FormSelect label="Notice period" value={noticePeriod} onChange={e => setNoticePeriod(e.target.value)} options={[{ label: 'Immediate', value: '0' }, { label: '15 days', value: '15' }, { label: '30 days', value: '30' }, { label: '60 days', value: '60' }]} />
+                          <FormSelect label="Open to relocation?" value={openToRelocation} onChange={e => setOpenToRelocation(e.target.value)} options={[{ label: 'Yes', value: 'Yes' }, { label: 'No', value: 'No' }]} />
                         </div>
                       </div>
                     )}
@@ -737,7 +762,7 @@ export function ProfileSetupPage() {
                             <div onClick={() => !resumeUploading && resumeInputRef.current?.click()} className={`border-2 ${resumeFilename ? 'border-solid border-teal-200 bg-teal-50' : 'border-dashed border-border hover:border-teal-200 hover:bg-teal-50'} rounded-xl p-7 text-center cursor-pointer transition-colors relative`}>
                               {resumeUploading ? (
                                 <div className="flex flex-col items-center justify-center min-h-[105px]">
-                                  <svg className="animate-spin w-8 h-8 text-teal-500 mb-2" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+                                  <svg className="animate-spin w-8 h-8 text-teal-500 mb-2" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" /></svg>
                                   <div className="text-sm text-teal-600 font-medium">Uploading to cloud…</div>
                                   <div className="text-xs text-gray-400 mt-1 max-w-[150px] truncate">{resumeFilename}</div>
                                 </div>

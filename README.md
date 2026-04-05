@@ -16,8 +16,9 @@ npm run dev
 **Tab 2 (Backend):**
 ```bash
 cd backend
-npm install  # Creates an isolated 'node_modules' folder and installs exact dependencies
-npm run dev
+  cd d:\ReadyMed\backend
+   .\venv\Scripts\activate
+   uvicorn main:app --reload --port 5000
 ```
 
 ---
@@ -74,8 +75,9 @@ Make sure you have the following installed on your machine:
 3. **Backend Setup:**
    Open a new terminal window:
    ```bash
-   cd backend
-   npm install  # Automatically creates an isolated 'node_modules' folder (Node's equivalent of a virtual environment)
+   cd d:\ReadyMed\backend
+   .\venv\Scripts\activate
+   uvicorn main:app --reload --port 5000
    ```
    *Create a `.env` file in the `backend` directory. You will also need to configure your `firebase-admin.js` / Firebase service account key to allow the backend to verify Firebase auth tokens securely.*
 

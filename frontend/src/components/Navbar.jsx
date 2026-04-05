@@ -32,10 +32,10 @@ export function Navbar({ variant = 'public' }) {
 
   const initials = getInitials(profile?.name)
   const avatarPhoto = profile?.photo
-  
+
   const getLinkClass = (path) => {
     const isActive = location.pathname.startsWith(path)
-    return isActive 
+    return isActive
       ? "px-4 py-2 rounded-lg text-sm font-semibold text-teal-700 bg-teal-50 transition-colors"
       : "px-4 py-2 rounded-lg text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors"
   }

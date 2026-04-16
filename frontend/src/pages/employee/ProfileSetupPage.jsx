@@ -98,7 +98,8 @@ export function ProfileSetupPage() {
           ]
           const pct = Math.round((checks.filter(Boolean).length / 7) * 100)
           if (pct >= 75 && isFirstLogin) {
-            navigate('/services')
+            const redirectTo = location.state?.redirectTo || '/services'
+            navigate(redirectTo)
             return
           }
         }

@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getUserProfile, getCompanyProfile, saveUserProfile } from '../hooks/useUserProfile'
+import { getUserProfile, getCompanyProfile, saveUserProfile, getProfileCompletion, getCompanyCompletion } from '../hooks/useUserProfile'
 import { useAppContext } from '../context/AppContext'
 
 const SERVICE_CATEGORIES = [
@@ -710,10 +710,14 @@ export function AllServicesPage() {
             <div className="grid md:grid-cols-2 gap-4">
               <button
                 onClick={() => {
-                  saveUserProfile({ role: 'employee' })
+                  const updatedProfile = saveUserProfile({ role: 'employee' })
                   setCurrentUser({ ...currentUser, role: 'employee' })
                   setShowHiringModal(false)
-                  setTimeout(() => navigate('/profile-setup', { state: { editMode: true } }), 0)
+
+                  const pct = getProfileCompletion(updatedProfile)
+                  const next = pct >= 75 ? '/dashboard' : '/profile-setup'
+
+                  setTimeout(() => navigate(next, next === '/profile-setup' ? { state: { redirectTo: '/dashboard' } } : undefined), 0)
                 }}
                 className="group p-6 bg-white border-2 border-gray-100 hover:border-teal-500 rounded-xl text-left transition-all hover:bg-teal-50/50 flex flex-col items-center justify-center"
               >
@@ -729,7 +733,12 @@ export function AllServicesPage() {
                   saveUserProfile({ role: 'recruiter' })
                   setCurrentUser({ ...currentUser, role: 'recruiter' })
                   setShowHiringModal(false)
-                  setTimeout(() => navigate('/recruiter/company-setup', { state: { editMode: true } }), 0)
+
+                  const company = getCompanyProfile() || {}
+                  const pct = getCompanyCompletion(company)
+                  const next = pct >= 75 ? '/recruiter/dashboard' : '/recruiter/company-setup'
+
+                  setTimeout(() => navigate(next, next === '/recruiter/company-setup' ? { state: { redirectTo: '/recruiter/dashboard' } } : undefined), 0)
                 }}
                 className="group p-6 bg-white border-2 border-gray-100 hover:border-amber-500 rounded-xl text-left transition-all hover:bg-amber-50/50 flex flex-col items-center justify-center"
               >

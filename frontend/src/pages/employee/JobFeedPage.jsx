@@ -1,11 +1,14 @@
-import React, { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import React, { useState, useEffect } from 'react'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { Badge } from '../../components/Badge'
 import { Button } from '../../components/Button'
 import { useAppContext } from '../../context/AppContext'
+import { getUserProfile, getProfileCompletion } from '../../hooks/useUserProfile'
 
 export function JobFeedPage() {
   const navigate = useNavigate()
+  const locationRouter = useLocation()
+  const isLocumMode = locationRouter.pathname.startsWith('/locum')
   const { browseJobs: jobs, toggleSaveJob, isJobSaved } = useAppContext()
   const [searchTerm, setSearchTerm] = useState('')
   const [filters, setFilters] = useState({
@@ -17,7 +20,27 @@ export function JobFeedPage() {
     posted: '',
   })
   const [openSections, setOpenSections] = useState({ profession: false, location: false, jobType: false, experience: false })
-  const [sortBy, setSortBy] = useState('relevant')
+
+  useEffect(() => {
+    if (!isLocumMode) return
+
+    const p = getUserProfile() || {}
+    const pct = getProfileCompletion(p)
+    const locumOk =
+      !!p.locumAvailability ||
+      ((Array.isArray(p.locumDays) && p.locumDays.length > 0) && !!(p.locumHoursPerDay || p.locumHoursPerWeek) && !!p.locumShiftPreference)
+
+    const prof = String(p.profession || p.healthcareRole || '').toLowerCase()
+    const allowed = prof.includes('doctor') || prof.includes('nurse')
+    if (!allowed) {
+      navigate('/role-selection?from=locum')
+      return
+    }
+
+    if (pct < 75 || !locumOk) {
+      navigate('/profile-setup', { state: { redirectTo: '/locum/jobs', mode: 'locum' } })
+    }
+  }, [isLocumMode, navigate])
 
   const toggleSection = (key) => setOpenSections(prev => ({ ...prev, [key]: !prev[key] }))
 
@@ -32,63 +55,119 @@ export function JobFeedPage() {
 
   const activeFilterCount = filters.profession.length + filters.location.length + filters.jobType.length + filters.experience.length + (filters.salary ? 1 : 0) + (filters.posted ? 1 : 0)
 
+  const getMinExperienceYears = (job) => {
+    // Prefer explicit numeric field (used by recruiter Post Job).
+    const direct = Number(job?.experience)
+    if (!Number.isNaN(direct) && direct >= 0) return direct
+
+    // Fallback: parse from requirements strings used in mock data / legacy content.
+    const req = Array.isArray(job?.requirements) ? job.requirements : []
+    const text = req.join(' ').toLowerCase()
+    const m = text.match(/(minimum|at least)?\s*(\d{1,2})\s*\+?\s*(years?|yrs?)/i)
+    if (m?.[2]) {
+      const n = Number(m[2])
+      return Number.isNaN(n) ? null : n
+    }
+
+    // Handle "5+ years" without minimum/at least prefix.
+    const m2 = text.match(/\b(\d{1,2})\s*\+\s*(years?|yrs?)\b/i)
+    if (m2?.[1]) {
+      const n = Number(m2[1])
+      return Number.isNaN(n) ? null : n
+    }
+
+    return null
+  }
+
+  const getProfessionKey = (job) => {
+    const parts = [job?.profession, job?.title, job?.department, job?.specialisation, job?.description]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase()
+
+    // If profession already looks like a role, map it quickly.
+    if (parts.includes('nurse')) return 'nurse'
+    if (parts.includes('pharmac')) return 'pharmacist'
+    if (parts.includes('lab')) return 'lab'
+    if (parts.includes('physio')) return 'physiotherapist'
+    if (parts.includes('radiolog')) return 'radiologist'
+    if (parts.includes('dent')) return 'dentist'
+    if (parts.includes('admin') || parts.includes('manager') || parts.includes('management') || parts.includes('hr')) return 'admin'
+
+    // Heuristic for doctors (common degrees/seniority keywords).
+    if (/(\bmd\b|\bms\b|\bdnb\b|\bmbbs\b|surgeon|consultant|physician|cardiolog|orthopedic|pediatric|dermat|gynae|obgyn)/i.test(parts)) {
+      return 'doctor'
+    }
+
+    return ''
+  }
+
   // Filter functionality
   const filteredJobs = jobs.filter(job => {
-    const searchMatch = !searchTerm || 
-      job.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      (job.specialisation || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      job.hospital.toLowerCase().includes(searchTerm.toLowerCase())
+    const term = searchTerm.trim().toLowerCase()
+    const title = (job.title || '').toLowerCase()
+    const hospital = (job.hospital || '').toLowerCase()
+    const specialisation = (job.specialisation || job.department || '').toLowerCase()
 
-    const profMatch = filters.profession.length === 0 || filters.profession.some(prof => 
-      job.title.toLowerCase().includes(prof.toLowerCase()) || 
-      (job.specialisation || '').toLowerCase().includes(prof.toLowerCase()) ||
-      (job.description || '').toLowerCase().includes(prof.toLowerCase())
-    )
+    const searchMatch = !term || title.includes(term) || specialisation.includes(term) || hospital.includes(term)
 
-    const locMatch = filters.location.length === 0 || filters.location.some(loc => 
-      (job.location || '').toLowerCase().includes(loc.toLowerCase())
-    )
+    const profKey = getProfessionKey(job)
+    const professionHaystack = `${job.profession || ''} ${job.title || ''} ${job.department || ''} ${job.specialisation || ''}`.toLowerCase()
+    const profMatch =
+      filters.profession.length === 0 ||
+      filters.profession.some((prof) => {
+        const p = String(prof).toLowerCase()
+        return professionHaystack.includes(p) || (profKey && profKey === p)
+      })
 
-    const typeMatch = filters.jobType.length === 0 || filters.jobType.some(t =>
-      (job.type || '').toLowerCase().includes(t.toLowerCase())
-    )
-
-    const expMatch = filters.experience.length === 0 || filters.experience.some(e => {
-      const exp = parseInt(job.experience) || 0
-      if (e === '0-2') return exp <= 2
-      if (e === '3-5') return exp >= 3 && exp <= 5
-      if (e === '6-10') return exp >= 6 && exp <= 10
-      if (e === '10+') return exp > 10
-      return true
+    const jobLoc = String(job.location || '').toLowerCase()
+    const locMatch = filters.location.length === 0 || filters.location.some(loc => {
+      const l = String(loc).toLowerCase()
+      if (jobLoc.includes(l)) return true
+      if (l === 'bangalore' && jobLoc.includes('bengaluru')) return true
+      if (l === 'delhi' && (jobLoc.includes('ncr') || jobLoc.includes('gurgaon') || jobLoc.includes('noida'))) return true
+      return false
     })
+
+    const jobType = String(job.type || job.employmentType || '').toLowerCase()
+
+    // Keep locum separate from normal jobs.
+    if (isLocumMode) {
+      if (!jobType.includes('locum')) return false
+      if (!(profKey === 'doctor' || profKey === 'nurse')) return false
+    } else {
+      if (jobType.includes('locum')) return false
+    }
+
+    const typeMatch = isLocumMode
+      ? true
+      : (filters.jobType.length === 0 || filters.jobType.some(t => jobType.includes(String(t).toLowerCase())))
+
+    const expNum = getMinExperienceYears(job)
+    const expMatch =
+      filters.experience.length === 0 ||
+      (expNum !== null && filters.experience.some(e => {
+        if (e === '0-2') return expNum >= 0 && expNum <= 2
+        if (e === '3-5') return expNum >= 3 && expNum <= 5
+        if (e === '6-10') return expNum >= 6 && expNum <= 10
+        if (e === '10+') return expNum > 10
+        return true
+      }))
 
     return searchMatch && profMatch && locMatch && typeMatch && expMatch
   })
 
-  // Sort
+  // Default sort (no UI): Most relevant based on user's profession
   const userProfile = (() => { try { return JSON.parse(localStorage.getItem('rm_user_profile') || '{}') } catch { return {} } })()
   const userProfession = (userProfile.profession || userProfile.specialization || '').toLowerCase()
 
-  const sortedJobs = [...filteredJobs].sort((a, b) => {
-    if (sortBy === 'newest') {
-      const da = a.createdAt ? new Date(a.createdAt).getTime() : 0
-      const db2 = b.createdAt ? new Date(b.createdAt).getTime() : 0
-      return db2 - da
+  const displayedJobs = [...filteredJobs].sort((a, b) => {
+    if (!userProfession) return 0
+    const score = (job) => {
+      const haystack = `${job.title || ''} ${job.profession || ''} ${job.specialisation || ''} ${job.department || ''} ${job.description || ''}`.toLowerCase()
+      return userProfession.split(' ').filter(w => w.length > 2 && haystack.includes(w)).length
     }
-    if (sortBy === 'salary') {
-      const sa = Number(a.salaryMax) || Number(a.salaryMin) || 0
-      const sb = Number(b.salaryMax) || Number(b.salaryMin) || 0
-      return sb - sa
-    }
-    // Most relevant: score by profession/title match with user's profile
-    if (sortBy === 'relevant' && userProfession) {
-      const score = (job) => {
-        const haystack = `${job.title} ${job.profession} ${job.specialisation} ${job.description}`.toLowerCase()
-        return userProfession.split(' ').filter(w => w.length > 2 && haystack.includes(w)).length
-      }
-      return score(b) - score(a)
-    }
-    return 0
+    return score(b) - score(a)
   })
 
   const toggleSaved = (e) => {
@@ -137,16 +216,21 @@ export function JobFeedPage() {
           {[
             {
               key: 'profession', label: 'Profession',
-              items: [
-                { label: 'Doctor / Surgeon', value: 'doctor' },
-                { label: 'Nurse', value: 'nurse' },
-                { label: 'Pharmacist', value: 'pharmacist' },
-                { label: 'Dentist', value: 'dentist' },
-                { label: 'Physiotherapist', value: 'physiotherapist' },
-                { label: 'Radiologist', value: 'radiologist' },
-                { label: 'Lab Technician', value: 'lab' },
-                { label: 'Admin / Management', value: 'admin' },
-              ]
+              items: isLocumMode
+                ? [
+                    { label: 'Doctor / Surgeon', value: 'doctor' },
+                    { label: 'Nurse', value: 'nurse' },
+                  ]
+                : [
+                    { label: 'Doctor / Surgeon', value: 'doctor' },
+                    { label: 'Nurse', value: 'nurse' },
+                    { label: 'Pharmacist', value: 'pharmacist' },
+                    { label: 'Dentist', value: 'dentist' },
+                    { label: 'Physiotherapist', value: 'physiotherapist' },
+                    { label: 'Radiologist', value: 'radiologist' },
+                    { label: 'Lab Technician', value: 'lab' },
+                    { label: 'Admin / Management', value: 'admin' },
+                  ]
             },
             {
               key: 'location', label: 'Location',
@@ -161,14 +245,13 @@ export function JobFeedPage() {
                 { label: 'Ahmedabad', value: 'ahmedabad' },
               ]
             },
-            {
+            !isLocumMode && {
               key: 'jobType', label: 'Job Type',
               items: [
                 { label: 'Full-time', value: 'full-time' },
                 { label: 'Part-time', value: 'part-time' },
                 { label: 'Contract', value: 'contract' },
                 { label: 'Consulting', value: 'consulting' },
-                { label: 'Locum / Temporary', value: 'locum' },
               ]
             },
             {
@@ -180,7 +263,7 @@ export function JobFeedPage() {
                 { label: '10+ years (Senior)', value: '10+' },
               ]
             },
-          ].map(section => (
+          ].filter(Boolean).map(section => (
             <div key={section.key} className="mb-1">
               <button
                 onClick={() => toggleSection(section.key)}
@@ -236,24 +319,17 @@ export function JobFeedPage() {
 
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h2 className="font-serif text-2xl font-normal text-gray-900">Matched jobs for you</h2>
-            <div className="text-[13px] text-gray-500 mt-1">Showing {sortedJobs.length} results based on your criteria</div>
-          </div>
-          <div className="flex items-center gap-2.5 shrink-0 ml-4">
-            <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="px-3.5 py-1.5 border border-border rounded-lg text-[13px] bg-white text-gray-700 outline-none cursor-pointer">
-              <option value="relevant">Most relevant</option>
-              <option value="newest">Newest first</option>
-              <option value="salary">Salary: High to low</option>
-            </select>
+            <h2 className="font-serif text-2xl font-normal text-gray-900">{isLocumMode ? 'Locum shifts' : 'Matched jobs for you'}</h2>
+            <div className="text-[13px] text-gray-500 mt-1">Showing {displayedJobs.length} results based on your criteria</div>
           </div>
         </div>
 
         <div className="space-y-3.5">
-          {sortedJobs.length === 0 ? (
+          {displayedJobs.length === 0 ? (
             <div className="p-8 text-center text-gray-500 bg-white border border-border rounded-xl">
               No jobs found matching your criteria. Try adjusting your search.
             </div>
-          ) : sortedJobs.map((job) => {
+          ) : displayedJobs.map((job) => {
             const logo = getLogoStyle(job.hospital)
             const matchScore = Math.floor(Math.random() * (98 - 70) + 70) // Mock random match score between 70-98
 

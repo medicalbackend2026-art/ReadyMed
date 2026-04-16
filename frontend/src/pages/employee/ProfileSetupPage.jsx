@@ -13,6 +13,7 @@ export function ProfileSetupPage() {
   const location = useLocation()
   // Only auto-redirect on first login (not when user explicitly edits profile)
   const isFirstLogin = !location.state?.editMode
+  const isLocumFlow = location.state?.mode === 'locum' || String(location.state?.redirectTo || '').startsWith('/locum')
   const profile = getUserProfile() || {}
 
   const getRoleMapping = (roleId) => {
@@ -40,6 +41,9 @@ export function ProfileSetupPage() {
   const [preferredJobType, setPreferredJobType] = useState(profile.preferredJobType || 'Full-time')
   const [preferredCity, setPreferredCity] = useState(profile.preferredCity || '')
   const [openToRemote, setOpenToRemote] = useState(profile.openToRemote || 'No')
+  const [locumDays, setLocumDays] = useState(Array.isArray(profile.locumDays) ? profile.locumDays : [])
+  const [locumHoursPerDay, setLocumHoursPerDay] = useState(profile.locumHoursPerDay || profile.locumHoursPerWeek || '')
+  const [locumShiftPreference, setLocumShiftPreference] = useState(profile.locumShiftPreference || '')
   const [currentSalary, setCurrentSalary] = useState(profile.currentSalary || '')
   const [expectedSalary, setExpectedSalary] = useState(profile.expectedSalary || '')
   const [noticePeriod, setNoticePeriod] = useState(profile.noticePeriod || '30')
@@ -79,6 +83,10 @@ export function ProfileSetupPage() {
           if (p.preferredJobType) setPreferredJobType(p.preferredJobType)
           if (p.preferredCity) setPreferredCity(p.preferredCity)
           if (p.openToRemote) setOpenToRemote(p.openToRemote)
+          if (Array.isArray(p.locumDays)) setLocumDays(p.locumDays)
+          if (p.locumHoursPerDay) setLocumHoursPerDay(p.locumHoursPerDay)
+          else if (p.locumHoursPerWeek) setLocumHoursPerDay(p.locumHoursPerWeek)
+          if (p.locumShiftPreference) setLocumShiftPreference(p.locumShiftPreference)
           if (p.currentSalary) setCurrentSalary(p.currentSalary)
           if (p.expectedSalary) setExpectedSalary(p.expectedSalary)
           if (p.noticePeriod) setNoticePeriod(p.noticePeriod)
@@ -87,17 +95,12 @@ export function ProfileSetupPage() {
           if (p.resumeUrl) setResumeUrl(p.resumeUrl)
 
           // Auto-redirect only on first login (not when user explicitly edits their profile)
-          const checks = [
-            !!p.profession,
-            !!(p.experiences?.length > 0 && p.experiences[0].jobTitle),
-            !!(p.qualifications?.length > 0 && p.qualifications[0].degree),
-            !!(p.certifications?.length > 0 && p.certifications[0].regNumber),
-            !!(p.skills?.length > 0),
-            !!(p.currentSalary || p.expectedSalary),
-            !!(p.photo || p.resumeFilename),
-          ]
-          const pct = Math.round((checks.filter(Boolean).length / 7) * 100)
-          if (pct >= 75 && isFirstLogin) {
+          const pct = getProfileCompletion(p)
+          const locumOk =
+            !isLocumFlow ||
+            !!p.locumAvailability ||
+            ((Array.isArray(p.locumDays) && p.locumDays.length > 0) && !!(p.locumHoursPerDay || p.locumHoursPerWeek) && !!p.locumShiftPreference)
+          if (pct >= 75 && isFirstLogin && locumOk) {
             const redirectTo = location.state?.redirectTo || '/services'
             navigate(redirectTo)
             return
@@ -112,17 +115,22 @@ export function ProfileSetupPage() {
     fetchFromCloud()
   }, [])
 
-  const professions = [
-    { icon: '🩺', name: 'Doctor' },
-    { icon: '👩‍⚕️', name: 'Nurse' },
-    { icon: '💊', name: 'Pharmacist' },
-    { icon: '🔬', name: 'Medical Physicist' },
-    { icon: '🧪', name: 'Lab Technician' },
-    { icon: '🦴', name: 'Physiotherapist' },
-    { icon: '📡', name: 'Radiologist' },
-    { icon: '🚑', name: 'Paramedic' },
-    { icon: '🏢', name: 'Hospital Admin' }
-  ]
+  const professions = isLocumFlow
+    ? [
+        { icon: '🩺', name: 'Doctor' },
+        { icon: '👩‍⚕️', name: 'Nurse' },
+      ]
+    : [
+        { icon: '🩺', name: 'Doctor' },
+        { icon: '👩‍⚕️', name: 'Nurse' },
+        { icon: '💊', name: 'Pharmacist' },
+        { icon: '🔬', name: 'Medical Physicist' },
+        { icon: '🧪', name: 'Lab Technician' },
+        { icon: '🦴', name: 'Physiotherapist' },
+        { icon: '📡', name: 'Radiologist' },
+        { icon: '🚑', name: 'Paramedic' },
+        { icon: '🏢', name: 'Hospital Admin' },
+      ]
 
   const availableSkills = [
     'Internal Medicine', 'ICU / Critical Care', 'Paediatrics', 'Emergency Medicine',
@@ -238,6 +246,32 @@ export function ProfileSetupPage() {
     if (e && e.preventDefault) e.preventDefault()
     setSaveError('')
 
+    if (isLocumFlow) {
+      const p = String(selectedProf || '').toLowerCase()
+      const allowed = p.includes('doctor') || p.includes('nurse')
+      if (!allowed) {
+        alert('Locum is available only for Doctors and Nurses. Please select Doctor or Nurse.')
+        return
+      }
+      if (!Array.isArray(locumDays) || locumDays.length === 0) {
+        alert('Please select available days for locum (Mon, Tue, Wed, ...).')
+        return
+      }
+      if (!String(locumHoursPerDay || '').trim()) {
+        alert('Please select how many hours/day you are available for locum.')
+        return
+      }
+      if (!String(locumShiftPreference || '').trim()) {
+        alert('Please select your preferred shift (Morning/Afternoon/Night/Any).')
+        return
+      }
+    }
+
+    const computedLocumAvailability =
+      (Array.isArray(locumDays) && locumDays.length ? locumDays.join(', ') : '') +
+      (locumHoursPerDay ? ` · ${locumHoursPerDay} hrs/day` : '') +
+      (locumShiftPreference ? ` · ${locumShiftPreference}` : '')
+
     const profileData = {
       name: profile.name || '',
       profession: selectedProf,
@@ -248,6 +282,12 @@ export function ProfileSetupPage() {
       preferredJobType,
       preferredCity,
       openToRemote,
+      locumDays,
+      locumHoursPerDay,
+      locumShiftPreference,
+      // Back-compat / easy display
+      locumAvailability: computedLocumAvailability || null,
+      locumHoursPerWeek: null,
       currentSalary,
       expectedSalary,
       noticePeriod,
@@ -255,6 +295,8 @@ export function ProfileSetupPage() {
       resumeFilename: resumeFilename || null,
       resumeUrl: resumeUrl || null,
     }
+
+    const redirectTo = location.state?.redirectTo || '/dashboard'
 
     // Always persist locally
     saveUserProfile(profileData)
@@ -277,12 +319,12 @@ export function ProfileSetupPage() {
           throw new Error(err.error || 'Save failed')
         }
       }
-      navigate('/dashboard')
+      navigate(redirectTo)
     } catch (err) {
       console.error('Profile sync error:', err)
       setSaveError('Profile saved locally but could not sync to cloud. You can continue.')
       // Still navigate after a short delay so user isn't blocked
-      setTimeout(() => navigate('/dashboard'), 2000)
+      setTimeout(() => navigate(redirectTo), 2000)
     } finally {
       setSaving(false)
     }
@@ -309,6 +351,7 @@ export function ProfileSetupPage() {
     saveUserProfile({
       profession: selectedProf, skills, experiences, qualifications,
       certifications, preferredJobType, preferredCity, openToRemote,
+      locumDays, locumHoursPerDay, locumShiftPreference, locumHoursPerWeek: null,
       currentSalary, expectedSalary, noticePeriod, openToRelocation,
     })
     if (idx < 6) setActiveSection(idx + 1)
@@ -321,7 +364,7 @@ export function ProfileSetupPage() {
     else if (idx === 1) { const e = [{ id: Date.now(), jobTitle: '', hospital: '', department: '', employmentType: 'Full-time', startDate: '', endDate: '', duties: '' }]; setExperiences(e); saveUserProfile({ experiences: e }) }
     else if (idx === 2) { const q = [{ id: Date.now(), degree: '', institution: '', specialisation: '', yearOfPassing: '' }]; setQualifications(q); saveUserProfile({ qualifications: q }) }
     else if (idx === 3) { const c = [{ id: Date.now(), licenseType: 'NMC', regNumber: '', issuingAuthority: '', validUntil: '', filename: null }]; setCertifications(c); saveUserProfile({ certifications: c }) }
-    else if (idx === 4) { setSkills([]); setPreferredCity(''); saveUserProfile({ skills: [], preferredCity: '' }) }
+    else if (idx === 4) { setSkills([]); setPreferredCity(''); setLocumDays([]); setLocumHoursPerDay(''); setLocumShiftPreference(''); saveUserProfile({ skills: [], preferredCity: '', locumDays: [], locumHoursPerDay: '', locumHoursPerWeek: null, locumShiftPreference: '', locumAvailability: '' }) }
     else if (idx === 5) { setCurrentSalary(''); setExpectedSalary(''); saveUserProfile({ currentSalary: '', expectedSalary: '' }) }
     else if (idx === 6) { setProfilePhoto(null); setResumeFilename(null); saveUserProfile({ photo: null, resumeFilename: null }) }
   }
@@ -393,6 +436,85 @@ export function ProfileSetupPage() {
         <h1 className="font-serif text-[26px] text-gray-900 mb-1">Complete your profile</h1>
         <p className="text-sm text-gray-500">Tell us about your medical career. Only Profession is required — everything else improves your job matches.</p>
       </div>
+
+      {isLocumFlow && (
+        <div className="mb-6 bg-teal-50 border border-teal-200 rounded-2xl px-5 py-4">
+          <div className="text-sm font-semibold text-teal-900 mb-1">Locum availability (required for locum)</div>
+          <div className="text-xs text-teal-800/80 mb-3">This is used only for locum, not normal job applications.</div>
+
+          <div className="mb-4">
+            <div className="block text-[13px] font-medium text-gray-700 mb-2">Available days</div>
+            <div className="flex flex-wrap gap-2">
+              {['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(day => (
+                <button
+                  key={day}
+                  type="button"
+                  onClick={() => {
+                    setLocumDays(prev => {
+                      const next = prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]
+                      saveUserProfile({ locumDays: next })
+                      return next
+                    })
+                  }}
+                  className={`px-3.5 py-1.5 border rounded-full text-[13px] transition-colors ${locumDays.includes(day) ? 'border-teal-600 bg-teal-50 text-teal-700 font-medium' : 'border-border bg-white text-gray-700 hover:border-teal-200 hover:bg-teal-50'}`}
+                >
+                  {day}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid sm:grid-cols-2 gap-3 max-w-[520px]">
+            <FormSelect
+              label="How many hours/day?"
+              value={locumHoursPerDay}
+              onChange={e => {
+                const v = e.target.value
+                setLocumHoursPerDay(v)
+                saveUserProfile({ locumHoursPerDay: v, locumHoursPerWeek: null })
+              }}
+              options={[
+                { label: 'Select…', value: '' },
+                { label: 'Any', value: 'Any' },
+                { label: '1', value: '1' },
+                { label: '2', value: '2' },
+                { label: '3', value: '3' },
+                { label: '4', value: '4' },
+                { label: '5', value: '5' },
+                { label: '6', value: '6' },
+                { label: '7', value: '7' },
+                { label: '8', value: '8' },
+                { label: '9', value: '9' },
+                { label: '10', value: '10' },
+                { label: '11', value: '11' },
+                { label: '12', value: '12' },
+                { label: '13', value: '13' },
+                { label: '14', value: '14' },
+                { label: '15', value: '15' },
+                { label: '16', value: '16' },
+              ]}
+            />
+
+            <FormSelect
+              label="Preferred shift"
+              value={locumShiftPreference}
+              onChange={e => {
+                const v = e.target.value
+                setLocumShiftPreference(v)
+                saveUserProfile({ locumShiftPreference: v })
+              }}
+              options={[
+                { label: 'Select…', value: '' },
+                { label: 'Any', value: 'Any' },
+                { label: 'Morning', value: 'Morning' },
+                { label: 'Afternoon', value: 'Afternoon' },
+                { label: 'Evening', value: 'Evening' },
+                { label: 'Night', value: 'Night' },
+              ]}
+            />
+          </div>
+        </div>
+      )}
 
       <div className="flex gap-7 items-start">
 
@@ -714,6 +836,7 @@ export function ProfileSetupPage() {
                         <div className="mb-0 max-w-[220px]">
                           <FormSelect label="Open to remote / teleconsultation?" value={openToRemote} onChange={e => setOpenToRemote(e.target.value)} options={[{ label: 'No', value: 'No' }, { label: 'Yes', value: 'Yes' }]} />
                         </div>
+
                       </div>
                     )}
 

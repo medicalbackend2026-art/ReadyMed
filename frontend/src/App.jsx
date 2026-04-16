@@ -95,6 +95,7 @@ export default function App() {
             <Route element={<EmployeeLayout />}>
               <Route path="/jobs" element={<JobFeedPage />} />
               <Route path="/jobs/:id" element={<JobDetailPage />} />
+              <Route path="/locum/jobs" element={<JobFeedPage />} />
               <Route path="/dashboard" element={<EmpDashboard />} />
               <Route path="/profile-setup" element={<ProfileSetupPage />} />
               <Route path="/services" element={<AllServicesPage />} />
@@ -105,7 +106,9 @@ export default function App() {
           <Route element={<ProtectedRoute allowedRoles={['recruiter']} />}>
             <Route path="/recruiter" element={<RecruiterLayout />}>
               <Route path="post-job" element={<PostJobPage />} />
+              <Route path="locum/post" element={<PostJobPage />} />
               <Route path="candidates" element={<CandidateSearchPage />} />
+              <Route path="locum/candidates" element={<CandidateSearchPage />} />
               <Route path="applications" element={<ManageApplicationsPage />} />
               <Route path="applications/:jobId" element={<JobCandidatesPage />} />
               <Route path="dashboard" element={<RecDashboard />} />

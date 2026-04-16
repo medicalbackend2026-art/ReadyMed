@@ -1,6 +1,5 @@
-"""
-api/routes/users.py
---------------------
+"""src/api/v1/endpoints/users.py
+
 Endpoints for user (candidate) profile management.
 
 Routes:
@@ -9,11 +8,13 @@ Routes:
   GET  /api/users               — list all candidates (for recruiters)
   GET  /api/users/{uid}/profile — get a specific candidate's public profile
 """
-from fastapi import APIRouter, Depends, HTTPException
 
-from core.firebase import firebase_auth, firebase_db
-from core.security import get_current_user
+from fastapi import APIRouter, Depends
+
 from google.cloud.firestore_v1 import SERVER_TIMESTAMP
+
+from src.core.firebase import firebase_auth, firebase_db
+from src.core.security import get_current_user
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -24,8 +25,8 @@ async def save_profile(body: dict, user: dict = Depends(get_current_user)):
 
     Note: The 'photo' field (base64) is excluded to stay under Firestore's 1MB limit.
     """
+
     db = firebase_db()
-    # Exclude photo (base64) to stay under Firestore 1MB doc limit
     body.pop("photo", None)
 
     data = {
@@ -40,7 +41,6 @@ async def save_profile(body: dict, user: dict = Depends(get_current_user)):
 
 @router.get("/profile", summary="Get own professional profile")
 async def get_profile(user: dict = Depends(get_current_user)):
-    """Fetches the authenticated user's own profile from Firestore."""
     db = firebase_db()
     doc = db.collection("users").document(user["uid"]).get()
     if not doc.exists:
@@ -50,8 +50,11 @@ async def get_profile(user: dict = Depends(get_current_user)):
 
 @router.get("", summary="List all candidates (recruiter view)")
 async def list_users(user: dict = Depends(get_current_user)):
-    """Returns a list of all candidate profiles. Falls back to Firebase Auth display name if
-    the Firestore doc has no 'name' field."""
+    """Returns a list of all candidate profiles.
+
+    Falls back to Firebase Auth display name if the Firestore doc has no 'name' field.
+    """
+
     db = firebase_db()
     snap = db.collection("users").stream()
 
@@ -60,7 +63,6 @@ async def list_users(user: dict = Depends(get_current_user)):
         d = doc.to_dict()
         name = d.get("name", "")
 
-        # Fallback: get display name from Firebase Auth if not in Firestore
         if not name:
             try:
                 auth_user = firebase_auth.get_user(doc.id)
@@ -69,48 +71,42 @@ async def list_users(user: dict = Depends(get_current_user)):
                 pass
 
         if not name:
-            continue  # Skip users with no name (incomplete profiles)
+            continue
 
-        location = (
-            d.get("preferredCity")
-            or d.get("city")
-            or d.get("location")
-            or (d.get("address") or {}).get("city")
-            or ""
+        users.append(
+            {
+                "uid": doc.id,
+                "name": name,
+                "profession": d.get("profession", ""),
+                "location": d.get("preferredCity", d.get("city", "")),
+                "experience": (d.get("experiences") or [{}])[0].get("jobTitle", "")
+                if d.get("experiences")
+                else "",
+                "skills": d.get("skills", []),
+                "expectedSalary": d.get("expectedSalary", ""),
+                "resumeFilename": d.get("resumeFilename"),
+                "resumeUrl": d.get("resumeUrl"),
+                "experiences": d.get("experiences", []),
+                "qualifications": d.get("qualifications", []),
+                "preferredJobType": d.get("preferredJobType", ""),
+                "noticePeriod": d.get("noticePeriod", ""),
+                "openToRelocation": d.get("openToRelocation", ""),
+            }
         )
-
-        users.append({
-            "uid": doc.id,
-            "name": name,
-            "profession": d.get("profession", ""),
-            "location": location,
-            "experience": (d.get("experiences") or [{}])[0].get("jobTitle", "") if d.get("experiences") else "",
-            "skills": d.get("skills", []),
-            "currentSalary": d.get("currentSalary", ""),
-            "expectedSalary": d.get("expectedSalary", ""),
-            "resumeFilename": d.get("resumeFilename"),
-            "resumeUrl": d.get("resumeUrl"),
-            "experiences": d.get("experiences", []),
-            "qualifications": d.get("qualifications", []),
-            "preferredJobType": d.get("preferredJobType", ""),
-            "noticePeriod": d.get("noticePeriod", ""),
-            "openToRelocation": d.get("openToRelocation", ""),
-        })
 
     return {"users": users}
 
 
 @router.get("/{uid}/profile", summary="Get a specific candidate's public profile")
 async def get_public_profile(uid: str, user: dict = Depends(get_current_user)):
-    """Returns public (non-sensitive) fields of a candidate. Internal uid, email,
-    and updatedAt are stripped out."""
+    """Returns public (non-sensitive) fields of a candidate."""
+
     db = firebase_db()
     doc = db.collection("users").document(uid).get()
     if not doc.exists:
         return {"profile": None}
 
     data = doc.to_dict()
-    # Strip out sensitive/internal fields
     for field in ("email", "uid", "updatedAt"):
         data.pop(field, None)
 

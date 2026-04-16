@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { FormInput, FormSelect } from '../../components/FormElements'
 import { getCompanyProfile, saveCompanyProfile, getCompanyCompletion } from '../../hooks/useUserProfile'
 import { auth } from '../../firebase'
@@ -8,6 +8,13 @@ const API = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
 export function CompanySetupPage() {
   const navigate = useNavigate()
+  const location = useLocation()
+
+  const editMode = !!location.state?.editMode
+  const redirectTo = location.state?.redirectTo
+  // Only auto-redirect when the caller explicitly asks for it (so users can always edit their company profile).
+  const shouldAutoRedirect = !!redirectTo && !editMode
+
   const saved = getCompanyProfile() || {}
 
   const [orgType, setOrgType] = useState(saved.orgType || '')
@@ -59,6 +66,12 @@ export function CompanySetupPage() {
           setContactPhone(profile.contactPhone || '')
           setContactEmail(profile.contactEmail || '')
           setRegCert(profile.regCert || null)
+
+          const pct = getCompanyCompletion(profile)
+          if (pct >= 75 && shouldAutoRedirect) {
+            navigate(redirectTo)
+            return
+          }
         }
       } catch (err) {
         console.warn('Could not fetch company from cloud:', err)

@@ -146,9 +146,9 @@ export function PostJobPage() {
           body: JSON.stringify(jobData),
         })
       }
-      navigate('/recruiter/dashboard')
+      navigate(isLocumMode ? '/recruiter/locum/dashboard' : '/recruiter/dashboard')
     } catch {
-      setTimeout(() => navigate('/recruiter/dashboard'), 1500)
+      setTimeout(() => navigate(isLocumMode ? '/recruiter/locum/dashboard' : '/recruiter/dashboard'), 1500)
     } finally {
       setSavingDraft(false)
     }
@@ -177,11 +177,11 @@ export function PostJobPage() {
         })
         if (!res.ok) { const err = await res.json(); throw new Error(err.error || 'Save failed') }
       }
-      navigate('/recruiter/dashboard')
+      navigate(isLocumMode ? '/recruiter/locum/dashboard' : '/recruiter/dashboard')
     } catch (err) {
       console.error('Job sync error:', err)
       setSaveError('Job posted locally but could not sync to cloud.')
-      setTimeout(() => navigate('/recruiter/dashboard'), 2000)
+      setTimeout(() => navigate(isLocumMode ? '/recruiter/locum/dashboard' : '/recruiter/dashboard'), 2000)
     } finally {
       setSaving(false)
     }
@@ -390,7 +390,7 @@ export function PostJobPage() {
             {savingDraft ? 'Saving…' : 'Save as draft'}
           </Button>
           <div className="flex gap-2.5 w-full sm:w-auto">
-            <Button type="button" variant="ghost" to="/recruiter/dashboard" className="flex-1 sm:flex-none">Cancel</Button>
+            <Button type="button" variant="ghost" to={isLocumMode ? '/recruiter/locum/dashboard' : '/recruiter/dashboard'} className="flex-1 sm:flex-none">Cancel</Button>
             <Button type="submit" variant="blue" size="lg" className="flex-1 sm:flex-none" disabled={saving}>
               {saving ? (editJob ? 'Saving…' : 'Publishing…') : (editJob ? 'Save changes →' : 'Publish job →')}
             </Button>

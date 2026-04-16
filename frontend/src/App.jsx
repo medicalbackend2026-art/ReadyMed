@@ -95,7 +95,12 @@ export default function App() {
             <Route element={<EmployeeLayout />}>
               <Route path="/jobs" element={<JobFeedPage />} />
               <Route path="/jobs/:id" element={<JobDetailPage />} />
+
+              {/* Locum (employee) */}
               <Route path="/locum/jobs" element={<JobFeedPage />} />
+              <Route path="/locum/jobs/:id" element={<JobDetailPage />} />
+              <Route path="/locum/dashboard" element={<EmpDashboard />} />
+
               <Route path="/dashboard" element={<EmpDashboard />} />
               <Route path="/profile-setup" element={<ProfileSetupPage />} />
               <Route path="/services" element={<AllServicesPage />} />
@@ -112,6 +117,12 @@ export default function App() {
               <Route path="applications" element={<ManageApplicationsPage />} />
               <Route path="applications/:jobId" element={<JobCandidatesPage />} />
               <Route path="dashboard" element={<RecDashboard />} />
+
+              {/* Locum (recruiter) */}
+              <Route path="locum/applications" element={<ManageApplicationsPage />} />
+              <Route path="locum/applications/:jobId" element={<JobCandidatesPage />} />
+              <Route path="locum/dashboard" element={<RecDashboard />} />
+
               <Route path="company-setup" element={<CompanySetupPage />} />
               <Route path="services" element={<AllServicesPage />} />
             </Route>

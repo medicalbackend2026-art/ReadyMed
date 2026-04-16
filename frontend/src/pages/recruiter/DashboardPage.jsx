@@ -5,8 +5,30 @@ import { getCompanyProfile } from '../../hooks/useUserProfile'
 import { auth } from '../../firebase'
 
 export function RecruiterDashboardPage() {
-  const { jobs, applications, toggleJobStatus, removeJob, loadRecruiterData } = useAppContext()
+  const { jobs: allJobs, applications: allApplications, toggleJobStatus, removeJob, loadRecruiterData } = useAppContext()
   const navigate = useNavigate()
+  const locationRouter = useLocation()
+  const isLocumMode = locationRouter.pathname.startsWith('/recruiter/locum')
+
+  const postPath = isLocumMode ? '/recruiter/locum/post' : '/recruiter/post-job'
+  const candidatesPath = isLocumMode ? '/recruiter/locum/candidates' : '/recruiter/candidates'
+  const applicationsPath = isLocumMode ? '/recruiter/locum/applications' : '/recruiter/applications'
+
+  const isLocumJob = (job) => {
+    const t = String(job?.type || job?.employmentType || '').toLowerCase()
+    return t.includes('locum')
+  }
+
+  const isLocumApp = (app) => {
+    const direct = String(app?.jobType || app?.type || '').toLowerCase()
+    if (direct.includes('locum')) return true
+    const job = allJobs.find(j => String(j.id) === String(app?.jobId))
+    return isLocumJob(job)
+  }
+
+  const jobs = isLocumMode ? allJobs.filter(isLocumJob) : allJobs.filter(j => !isLocumJob(j))
+  const applications = isLocumMode ? allApplications.filter(isLocumApp) : allApplications.filter(a => !isLocumApp(a))
+
   const company = getCompanyProfile() || {}
 
   useEffect(() => { loadRecruiterData() }, [])
@@ -50,8 +72,8 @@ export function RecruiterDashboardPage() {
             {isVerified && <span className="text-green-600 font-medium"> · ✓ Verified</span>}
           </div>
         </div>
-        <Link to="/recruiter/post-job" className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-[13px] font-semibold rounded-lg transition-colors text-center inline-block">
-          + Post a new job
+        <Link to={postPath} className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-[13px] font-semibold rounded-lg transition-colors text-center inline-block">
+          + {isLocumMode ? 'Post a locum shift' : 'Post a new job'}
         </Link>
       </div>
 
@@ -83,8 +105,8 @@ export function RecruiterDashboardPage() {
           {/* My Job Posts */}
           <div className="bg-white border border-border rounded-[14px] overflow-hidden">
             <div className="px-5 py-4 border-b border-border flex justify-between items-center bg-white">
-              <div className="text-[15px] font-semibold text-gray-900">My job posts</div>
-              <Link to="/recruiter/post-job" className="text-[13px] font-medium text-blue-600 hover:underline">+ Post new</Link>
+              <div className="text-[15px] font-semibold text-gray-900">My {isLocumMode ? 'locum posts' : 'job posts'}</div>
+              <Link to={postPath} className="text-[13px] font-medium text-blue-600 hover:underline">+ Post new</Link>
             </div>
             
             <div className="divide-y divide-border">
@@ -102,7 +124,7 @@ export function RecruiterDashboardPage() {
                         {job.status === 'draft' ? 'Draft' : job.paused ? 'Paused' : 'Active'}
                       </span>
                       <div className="flex gap-2">
-                        <button onClick={() => navigate(`/recruiter/post-job?edit=${job.id}`)}
+                        <button onClick={() => navigate(`${postPath}?edit=${job.id}`)}
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-300 bg-white text-gray-700 text-xs font-medium hover:bg-gray-50 hover:border-gray-400 transition-colors">
                           <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M11.5 2.5a2.121 2.121 0 013 3L5 15H1v-4L11.5 2.5z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
                           Edit
@@ -138,12 +160,12 @@ export function RecruiterDashboardPage() {
           <div className="bg-white border border-border rounded-[14px] overflow-hidden">
             <div className="px-5 py-4 border-b border-border flex justify-between items-center bg-white">
               <div className="text-[15px] font-semibold text-gray-900">Recent candidates</div>
-              <Link to="/recruiter/applications" className="text-[13px] font-medium text-blue-600 hover:underline">View pipeline &rarr;</Link>
+              <Link to={applicationsPath} className="text-[13px] font-medium text-blue-600 hover:underline">View pipeline &rarr;</Link>
             </div>
             
             <div className="divide-y divide-border">
               {recentApps.length > 0 ? recentApps.map(app => (
-                <div key={app.id} onClick={() => navigate('/recruiter/applications')} className="p-3.5 sm:px-5 flex items-center gap-3 hover:bg-gray-50 transition-colors cursor-pointer">
+                <div key={app.id} onClick={() => navigate(applicationsPath)} className="p-3.5 sm:px-5 flex items-center gap-3 hover:bg-gray-50 transition-colors cursor-pointer">
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center text-[13px] font-bold shrink-0 bg-blue-100 text-blue-700`}>
                     {getInitials(app.candidateName || app.applicantName)}
                   </div>
@@ -172,17 +194,17 @@ export function RecruiterDashboardPage() {
               <div className="text-[15px] font-semibold text-gray-900">Quick actions</div>
             </div>
             <div className="p-4 grid grid-cols-2 gap-2.5">
-              <Link to="/recruiter/post-job" className="p-4 border border-border rounded-lg text-center hover:border-blue-200 hover:bg-blue-50 transition-all hover:shadow-sm">
+              <Link to={postPath} className="p-4 border border-border rounded-lg text-center hover:border-blue-200 hover:bg-blue-50 transition-all hover:shadow-sm">
                 <div className="text-[22px] mb-1.5">📝</div>
-                <div className="text-[13px] font-semibold text-gray-700">Post a Job</div>
+                <div className="text-[13px] font-semibold text-gray-700">{isLocumMode ? 'Post Locum' : 'Post a Job'}</div>
               </Link>
-              <Link to="/recruiter/candidates" className="p-4 border border-border rounded-lg text-center hover:border-blue-200 hover:bg-blue-50 transition-all hover:shadow-sm">
+              <Link to={candidatesPath} className="p-4 border border-border rounded-lg text-center hover:border-blue-200 hover:bg-blue-50 transition-all hover:shadow-sm">
                 <div className="text-[22px] mb-1.5">🔍</div>
-                <div className="text-[13px] font-semibold text-gray-700">Search Candidates</div>
+                <div className="text-[13px] font-semibold text-gray-700">{isLocumMode ? 'Search Locum' : 'Search Candidates'}</div>
               </Link>
-              <Link to="/recruiter/applications" className="p-4 border border-border rounded-lg text-center hover:border-blue-200 hover:bg-blue-50 transition-all hover:shadow-sm">
+              <Link to={applicationsPath} className="p-4 border border-border rounded-lg text-center hover:border-blue-200 hover:bg-blue-50 transition-all hover:shadow-sm">
                 <div className="text-[22px] mb-1.5">📊</div>
-                <div className="text-[13px] font-semibold text-gray-700">Manage Pipeline</div>
+                <div className="text-[13px] font-semibold text-gray-700">{isLocumMode ? 'Locum Pipeline' : 'Manage Pipeline'}</div>
               </Link>
               <Link to="/recruiter/company-setup" className="p-4 border border-border rounded-lg text-center hover:border-blue-200 hover:bg-blue-50 transition-all hover:shadow-sm">
                 <div className="text-[22px] mb-1.5">🏢</div>

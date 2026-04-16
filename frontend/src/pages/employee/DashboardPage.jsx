@@ -1,10 +1,14 @@
 import React, { useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { Button } from '../../components/Button'
 import { useAppContext } from '../../context/AppContext'
 import { getUserProfile, getProfileCompletion } from '../../hooks/useUserProfile'
 
 export function DashboardPage() {
+  const location = useLocation()
+  const isLocumMode = location.pathname.startsWith('/locum')
+  const jobsBasePath = isLocumMode ? '/locum/jobs' : '/jobs'
+
   const { myApplications, currentUser, loadMyApplications, savedJobs, toggleSaveJob, browseJobs, jobsLoading } = useAppContext()
 
   useEffect(() => { loadMyApplications() }, [])
@@ -13,11 +17,21 @@ export function DashboardPage() {
   const completionPercentage = getProfileCompletion(profile)
   const displayName = profile?.name || currentUser?.name || 'there'
 
-  const myApps = myApplications
+  const isLocumApp = (app) => {
+    const t = String(app?.jobType || app?.type || app?.employmentType || '').toLowerCase()
+    if (t.includes('locum')) return true
+    const job = browseJobs.find(j => String(j.id) === String(app?.jobId))
+    const jt = String(job?.type || job?.employmentType || '').toLowerCase()
+    return jt.includes('locum')
+  }
+
+  const myApps = isLocumMode
+    ? myApplications.filter(isLocumApp)
+    : myApplications.filter(a => !isLocumApp(a))
 
   // Build real notifications from application statuses
   const notifications = [
-    ...myApplications
+    ...myApps
       .filter(a => a.status && a.status !== 'New')
       .map(a => {
         const hospital = a.hospital || 'A hospital'
@@ -52,7 +66,13 @@ export function DashboardPage() {
 
   // Recommended: jobs not already applied to
   const appliedJobIds = new Set(myApplications.map(a => String(a.jobId)))
-  const recommendedJobs = browseJobs.filter(j => !appliedJobIds.has(String(j.id))).slice(0, 3)
+  const recommendedJobs = browseJobs
+    .filter(j => !appliedJobIds.has(String(j.id)))
+    .filter(j => {
+      const t = String(j?.type || j?.employmentType || '').toLowerCase()
+      return isLocumMode ? t.includes('locum') : !t.includes('locum')
+    })
+    .slice(0, 3)
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -75,7 +95,13 @@ export function DashboardPage() {
           <h1 className="font-serif text-[26px] text-gray-900 mb-1">Welcome back, {displayName}</h1>
           <div className="text-sm text-gray-500">Here's what's happening with your job search today.</div>
         </div>
-        <Link to="/profile-setup" state={{ editMode: true }} className="px-4 py-2 rounded-lg border border-teal-300 bg-teal-50 text-teal-700 text-[13px] font-semibold hover:bg-teal-100 transition-colors">Edit profile</Link>
+        <Link
+          to="/profile-setup"
+          state={isLocumMode ? { editMode: true, mode: 'locum', redirectTo: '/locum/dashboard' } : { editMode: true }}
+          className="px-4 py-2 rounded-lg border border-teal-300 bg-teal-50 text-teal-700 text-[13px] font-semibold hover:bg-teal-100 transition-colors"
+        >
+          {isLocumMode ? 'Edit locum profile' : 'Edit profile'}
+        </Link>
       </div>
 
       {/* Profile Completion Banner — only shown when profile is incomplete */}
@@ -91,16 +117,24 @@ export function DashboardPage() {
               Upload a photo and resume to reach 100% — complete profiles get 3× more views.
             </div>
           </div>
-          <Button to="/profile-setup#step6" variant="primary" size="sm" className="w-full md:w-auto shrink-0">Complete profile &rarr;</Button>
+          <Button
+            to="/profile-setup#step6"
+            state={isLocumMode ? { editMode: true, mode: 'locum', redirectTo: '/locum/dashboard' } : undefined}
+            variant="primary"
+            size="sm"
+            className="w-full md:w-auto shrink-0"
+          >
+            Complete profile &rarr;
+          </Button>
         </div>
       )}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5 mb-7">
         {[
-          { label: 'Applications sent', value: myApplications.length.toString(), color: 'gray-900' },
-          { label: 'Shortlisted', value: myApplications.filter(a => a.status === 'Shortlisted').length.toString(), color: 'teal-600' },
-          { label: 'Interview scheduled', value: myApplications.filter(a => a.status === 'Interviewing').length.toString(), color: 'blue-600' },
+          { label: 'Applications sent', value: myApps.length.toString(), color: 'gray-900' },
+          { label: 'Shortlisted', value: myApps.filter(a => a.status === 'Shortlisted').length.toString(), color: 'teal-600' },
+          { label: 'Interview scheduled', value: myApps.filter(a => a.status === 'Interviewing').length.toString(), color: 'blue-600' },
           { label: 'Saved jobs', value: savedJobs.length.toString(), color: 'amber-600' }
         ].map((stat, i) => (
           <div key={i} className="bg-white border border-border rounded-xl p-[18px]">
@@ -121,12 +155,12 @@ export function DashboardPage() {
             </div>
             
             <div className="divide-y divide-border">
-              {myApplications.length > 0 ? myApplications.map((app, i) => {
+              {myApps.length > 0 ? myApps.map((app, i) => {
                 const title = app.jobTitle || app.title || 'Job Application'
                 const hospital = app.hospital || ''
                 const displayDate = app.date || (app.appliedAt ? new Date(app.appliedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Recently')
                 const matchScore = app.matchScore ? app.matchScore.toString().replace('%','') : null
-                const jobLink = app.jobId ? `/jobs/${app.jobId}` : null
+                const jobLink = app.jobId ? `${jobsBasePath}/${app.jobId}` : null
                 return (
                   <Link
                     key={app.id || i}
@@ -149,7 +183,7 @@ export function DashboardPage() {
                   </Link>
                 )
               }) : (
-                <div className="px-5 py-8 text-center text-sm text-gray-500">You haven't applied to any jobs yet. <Link to="/jobs" className="text-teal-600 hover:underline font-medium">Browse jobs →</Link></div>
+                <div className="px-5 py-8 text-center text-sm text-gray-500">You haven't applied to any {isLocumMode ? 'locum shifts' : 'jobs'} yet. <Link to={jobsBasePath} className="text-teal-600 hover:underline font-medium">Browse {isLocumMode ? 'locum shifts' : 'jobs'} →</Link></div>
               )}
             </div>
           </div>
@@ -158,19 +192,19 @@ export function DashboardPage() {
           <div className="bg-white border border-border rounded-[14px] overflow-hidden">
             <div className="px-5 py-4 border-b border-border flex justify-between items-center">
               <div className="text-[15px] font-semibold text-gray-900">Recommended for you</div>
-              <Link to="/jobs" className="text-[13px] font-medium text-teal-600 hover:underline">Browse all &rarr;</Link>
+              <Link to={jobsBasePath} className="text-[13px] font-medium text-teal-600 hover:underline">Browse all &rarr;</Link>
             </div>
             <div className="divide-y divide-border">
               {jobsLoading ? (
                 <div className="px-5 py-8 text-center text-sm text-gray-500">Loading jobs...</div>
               ) : recommendedJobs.length === 0 ? (
-                <div className="px-5 py-8 text-center text-sm text-gray-500">No jobs available right now. <Link to="/jobs" className="text-teal-600 hover:underline font-medium">Browse all →</Link></div>
+                <div className="px-5 py-8 text-center text-sm text-gray-500">No {isLocumMode ? 'locum shifts' : 'jobs'} available right now. <Link to={jobsBasePath} className="text-teal-600 hover:underline font-medium">Browse all →</Link></div>
               ) : recommendedJobs.map(job => {
                 const initials = job.hospital?.substring(0, 2).toUpperCase() || '??'
                 const colors = ['purple', 'green', 'blue', 'teal', 'amber']
                 const color = colors[(job.hospital?.length || 0) % colors.length]
                 return (
-                  <Link key={job.id} to={`/jobs/${job.id}`} className="px-5 py-4 flex gap-3.5 items-center hover:bg-gray-50 transition-colors block">
+                  <Link key={job.id} to={`${jobsBasePath}/${job.id}`} className="px-5 py-4 flex gap-3.5 items-center hover:bg-gray-50 transition-colors block">
                     <div className={`w-[38px] h-[38px] rounded-lg flex items-center justify-center text-[13px] font-bold shrink-0 bg-${color}-50 text-${color}-700`}>{initials}</div>
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-semibold text-gray-900 mb-0.5 truncate">{job.title}</div>
@@ -210,17 +244,17 @@ export function DashboardPage() {
           <div className="bg-white border border-border rounded-[14px] overflow-hidden">
             <div className="px-5 py-4 border-b border-border flex justify-between items-center">
               <div className="text-[15px] font-semibold text-gray-900">Saved jobs ({savedJobs.length})</div>
-              <Link to="/jobs" className="text-[13px] font-medium text-teal-600 hover:underline">Browse more →</Link>
+              <Link to={jobsBasePath} className="text-[13px] font-medium text-teal-600 hover:underline">Browse more →</Link>
             </div>
             <div className="divide-y divide-border">
               {savedJobs.length === 0 ? (
-                <div className="px-5 py-8 text-center text-sm text-gray-500">No saved jobs yet. <Link to="/jobs" className="text-teal-600 hover:underline font-medium">Browse jobs →</Link></div>
+                <div className="px-5 py-8 text-center text-sm text-gray-500">No saved {isLocumMode ? 'locum shifts' : 'jobs'} yet. <Link to={jobsBasePath} className="text-teal-600 hover:underline font-medium">Browse {isLocumMode ? 'locum shifts' : 'jobs'} →</Link></div>
               ) : savedJobs.slice(0, 5).map((job) => (
                 <div key={job.id} className="px-5 py-3.5 hover:bg-gray-50 transition-colors">
                   <div className="text-[14px] font-semibold text-gray-900 mb-0.5">{job.title}</div>
                   <div className="text-xs text-gray-500 mb-2.5">{job.hospital}{job.location ? ` · ${job.location}` : ''}{job.salary ? ` · ${job.salary}` : ''}</div>
                   <div className="flex gap-2">
-                    <Button to={`/jobs/${job.id}`} variant="primary" size="sm" className="py-1 px-3 text-xs">View →</Button>
+                    <Button to={`${jobsBasePath}/${job.id}`} variant="primary" size="sm" className="py-1 px-3 text-xs">View →</Button>
                     <button onClick={() => toggleSaveJob(job)} className="text-xs px-3 py-1 rounded-lg border border-gray-200 text-gray-500 hover:bg-red-50 hover:text-red-500 hover:border-red-200 transition-colors">✕ Remove</button>
                   </div>
                 </div>

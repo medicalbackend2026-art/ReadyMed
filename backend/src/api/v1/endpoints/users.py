@@ -9,7 +9,7 @@ Routes:
   GET  /api/users/{uid}/profile — get a specific candidate's public profile
 """
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 
 from google.cloud.firestore_v1 import SERVER_TIMESTAMP
 
@@ -49,7 +49,10 @@ async def get_profile(user: dict = Depends(get_current_user)):
 
 
 @router.get("", summary="List all candidates (recruiter view)")
-async def list_users(user: dict = Depends(get_current_user)):
+async def list_users(
+    locum_only: bool = Query(False, alias="locumOnly"),
+    user: dict = Depends(get_current_user),
+):
     """Returns a list of all candidate profiles.
 
     Falls back to Firebase Auth display name if the Firestore doc has no 'name' field.
@@ -73,6 +76,22 @@ async def list_users(user: dict = Depends(get_current_user)):
         if not name:
             continue
 
+        locum_days = d.get("locumDays") or []
+        locum_hours = d.get("locumHoursPerDay") or d.get("locumHoursPerWeek")
+        locum_shift = d.get("locumShiftPreference")
+        locum_eligible = bool(d.get("locumAvailability")) or (
+            isinstance(locum_days, list)
+            and len(locum_days) > 0
+            and bool(locum_hours)
+            and bool(locum_shift)
+        )
+
+        if locum_only:
+            p = str(d.get("profession", "")).lower()
+            allowed = ("doctor" in p) or ("nurse" in p)
+            if not allowed or not locum_eligible:
+                continue
+
         users.append(
             {
                 "uid": doc.id,
@@ -83,14 +102,16 @@ async def list_users(user: dict = Depends(get_current_user)):
                 if d.get("experiences")
                 else "",
                 "skills": d.get("skills", []),
+                "currentSalary": d.get("currentSalary", ""),
                 "expectedSalary": d.get("expectedSalary", ""),
+                "noticePeriod": d.get("noticePeriod", ""),
+                "preferredJobType": d.get("preferredJobType", ""),
+                "openToRelocation": d.get("openToRelocation", ""),
                 "resumeFilename": d.get("resumeFilename"),
                 "resumeUrl": d.get("resumeUrl"),
                 "experiences": d.get("experiences", []),
                 "qualifications": d.get("qualifications", []),
-                "preferredJobType": d.get("preferredJobType", ""),
-                "noticePeriod": d.get("noticePeriod", ""),
-                "openToRelocation": d.get("openToRelocation", ""),
+                "locumEligible": locum_eligible,
             }
         )
 

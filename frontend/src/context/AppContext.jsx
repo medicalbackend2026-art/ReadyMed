@@ -147,6 +147,7 @@ export function AppProvider({ children }) {
       id: Date.now(),
       jobId: String(jobId),
       jobTitle: job.title,
+      jobType: job.type || job.employmentType || '',
       hospital: job.hospital || '',
       applicantName: applicantName || currentUser.name,
       applicantEmail: currentUser.email || '',

@@ -395,6 +395,7 @@ export function AllServicesPage() {
   const isEmployer = userProfile?.role === 'recruiter' || !!companyProfile?.companyName
   const [activeCategory, setActiveCategory] = useState('all')
   const [showHiringModal, setShowHiringModal] = useState(false)
+  const [showLocumModal, setShowLocumModal] = useState(false)
   const { currentUser, setCurrentUser } = useAppContext()
 
   const SERVICE_ROUTES = {
@@ -426,6 +427,11 @@ export function AllServicesPage() {
   const handleServiceClick = (serviceId) => {
     if (serviceId === 'jobs-and-hiring') {
       setShowHiringModal(true)
+      return
+    }
+
+    if (serviceId === 'locum-doctor') {
+      setShowLocumModal(true)
       return
     }
 
@@ -692,6 +698,86 @@ export function AllServicesPage() {
           </div>
         </div>
       </div>
+
+      {/* Locum Selection Modal */}
+      {showLocumModal && (
+        <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-8 shadow-2xl relative">
+            <button
+              onClick={() => setShowLocumModal(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 p-2"
+            >
+              ✕
+            </button>
+
+            <h2 className="text-2xl font-serif text-gray-900 mb-2 font-medium text-center">Locum</h2>
+            <p className="text-sm text-gray-500 text-center mb-8">Locum is available only for Doctors and Nurses.</p>
+
+            <div className="grid md:grid-cols-2 gap-4">
+              <button
+                onClick={() => {
+                  const updatedProfile = saveUserProfile({ role: 'employee' })
+                  setCurrentUser({ ...currentUser, role: 'employee' })
+                  setShowLocumModal(false)
+
+                  const prof = String(updatedProfile?.profession || updatedProfile?.healthcareRole || '').toLowerCase()
+                  const allowed = prof.includes('doctor') || prof.includes('nurse')
+                  if (!allowed) {
+                    alert('Locum is currently available only for Doctors and Nurses. Please select Doctor or Nurse.')
+                    setTimeout(() => navigate('/role-selection?from=locum'), 0)
+                    return
+                  }
+
+                  const pct = getProfileCompletion(updatedProfile)
+                  const locumOk =
+                    !!updatedProfile?.locumAvailability ||
+                    ((Array.isArray(updatedProfile?.locumDays) && updatedProfile.locumDays.length > 0) && !!(updatedProfile?.locumHoursPerDay || updatedProfile?.locumHoursPerWeek) && !!updatedProfile?.locumShiftPreference)
+                  const next = pct >= 75 && locumOk ? '/locum/jobs' : '/profile-setup'
+
+                  setTimeout(
+                    () =>
+                      navigate(
+                        next,
+                        next === '/profile-setup'
+                          ? { state: { redirectTo: '/locum/jobs', mode: 'locum' } }
+                          : undefined
+                      ),
+                    0
+                  )
+                }}
+                className="group p-6 bg-white border-2 border-gray-100 hover:border-teal-500 rounded-xl text-left transition-all hover:bg-teal-50/50 flex flex-col items-center justify-center"
+              >
+                <div className="w-12 h-12 bg-teal-100/50 rounded-full flex items-center justify-center text-teal-600 mb-4 group-hover:scale-110 transition-transform text-2xl">
+                  👨‍⚕️
+                </div>
+                <div className="font-semibold text-gray-900 mb-1">Find Locum Work</div>
+                <div className="text-xs text-gray-500 text-center">I am a Doctor/Nurse looking for locum shifts</div>
+              </button>
+
+              <button
+                onClick={() => {
+                  saveUserProfile({ role: 'recruiter' })
+                  setCurrentUser({ ...currentUser, role: 'recruiter' })
+                  setShowLocumModal(false)
+
+                  const company = getCompanyProfile() || {}
+                  const pct = getCompanyCompletion(company)
+                  const next = pct >= 75 ? '/recruiter/locum/post' : '/recruiter/company-setup'
+
+                  setTimeout(() => navigate(next, next === '/recruiter/company-setup' ? { state: { redirectTo: '/recruiter/locum/post' } } : undefined), 0)
+                }}
+                className="group p-6 bg-white border-2 border-gray-100 hover:border-amber-500 rounded-xl text-left transition-all hover:bg-amber-50/50 flex flex-col items-center justify-center"
+              >
+                <div className="w-12 h-12 bg-amber-100/50 rounded-full flex items-center justify-center text-amber-600 mb-4 group-hover:scale-110 transition-transform text-2xl">
+                  🏥
+                </div>
+                <div className="font-semibold text-gray-900 mb-1">Hire Locum</div>
+                <div className="text-xs text-gray-500 text-center">Post locum shifts for Doctors/Nurses</div>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Hiring Selection Modal */}
       {showHiringModal && (

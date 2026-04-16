@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import { Button } from '../../components/Button'
 import { FormInput, FormSelect } from '../../components/FormElements'
 import { useAppContext } from '../../context/AppContext'
@@ -27,6 +27,8 @@ function StepCard({ id, num, title, desc, children }) {
 
 export function PostJobPage() {
   const navigate = useNavigate()
+  const locationRouter = useLocation()
+  const isLocumMode = locationRouter.pathname.startsWith('/recruiter/locum')
   const [searchParams] = useSearchParams()
   const editId = searchParams.get('edit')
   const { addJob, jobs, removeJob } = useAppContext()
@@ -37,7 +39,7 @@ export function PostJobPage() {
   const [title, setTitle] = useState(editJob?.title || '')
   const [profession, setProfession] = useState(editJob?.profession || 'Doctor')
   const [department, setDepartment] = useState(editJob?.department || '')
-  const [employmentType, setEmploymentType] = useState(editJob?.type || 'Full-time')
+  const [employmentType, setEmploymentType] = useState(isLocumMode ? 'Locum' : (editJob?.type || 'Full-time'))
   const [openings, setOpenings] = useState(editJob?.openings || '1')
   const [location, setLocation] = useState(editJob?.location || company.city || '')
   const [experience, setExperience] = useState(editJob?.experience || '')
@@ -51,6 +53,11 @@ export function PostJobPage() {
   const [benefits, setBenefits] = useState(editJob?.benefits || '')
   const [deadline, setDeadline] = useState(editJob?.deadline || '')
 
+  const [locumHoursPerDay, setLocumHoursPerDay] = useState(editJob?.locumHoursPerDay || editJob?.locumHoursPerWeek || '')
+  const [locumShiftStart, setLocumShiftStart] = useState(editJob?.locumShiftStart || '')
+  const [locumShiftEnd, setLocumShiftEnd] = useState(editJob?.locumShiftEnd || '')
+  const [locumDaysOfWeek, setLocumDaysOfWeek] = useState(Array.isArray(editJob?.locumDaysOfWeek) ? editJob.locumDaysOfWeek : [])
+
   const availableSkills = [
     'Internal Medicine', 'ICU / Critical Care', 'Emergency Medicine',
     'Cardiology', 'Nephrology', 'General Medicine',
@@ -61,9 +68,18 @@ export function PostJobPage() {
     setSkills(prev => prev.includes(skill) ? prev.filter(s => s !== skill) : [...prev, skill])
   }
 
+  const toggleLocumDay = (day) => {
+    setLocumDaysOfWeek(prev => prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day])
+  }
+
   const [saving, setSaving] = useState(false)
   const [savingDraft, setSavingDraft] = useState(false)
   const [saveError, setSaveError] = useState('')
+
+  useEffect(() => {
+    if (!isLocumMode) return
+    if (profession !== 'Doctor' && profession !== 'Nurse') setProfession('Doctor')
+  }, [isLocumMode, profession])
 
   const buildJobData = (status = 'active') => {
     const minNum = parseInt(String(salaryMin).replace(/,/g, '')) || 0
@@ -76,8 +92,17 @@ export function PostJobPage() {
       title,
       profession,
       department,
-      type: employmentType,
-      employmentType,
+      type: isLocumMode ? 'Locum' : employmentType,
+      employmentType: isLocumMode ? 'Locum' : employmentType,
+      ...(isLocumMode
+        ? {
+            locumHoursPerDay: locumHoursPerDay ? Number(locumHoursPerDay) : null,
+            locumHoursPerWeek: null,
+            locumShiftStart,
+            locumShiftEnd,
+            locumDaysOfWeek,
+          }
+        : {}),
       openings: parseInt(openings) || 1,
       location,
       experience,
@@ -166,8 +191,21 @@ export function PostJobPage() {
     <div className="max-w-[720px] mx-auto px-6 py-10 pb-20 font-sans">
 
       <div className="text-center mb-9">
-        <h1 className="font-serif text-[28px] text-gray-900 mb-1.5">{editJob ? 'Edit job post' : 'Post a new job'}</h1>
-        <p className="text-sm text-gray-500">{editJob ? 'Update the details of your job listing.' : 'Create your listing in 3 simple steps. Published jobs are instantly visible to matched candidates.'}</p>
+        <h1 className="font-serif text-[28px] text-gray-900 mb-1.5">
+          {editJob ? (isLocumMode ? 'Edit locum post' : 'Edit job post') : (isLocumMode ? 'Post a locum shift' : 'Post a new job')}
+        </h1>
+        <p className="text-sm text-gray-500">
+          {isLocumMode
+            ? 'Create a locum requirement (Doctors and Nurses only) with hours and shift timings.'
+            : (editJob ? 'Update the details of your job listing.' : 'Create your listing in 3 simple steps. Published jobs are instantly visible to matched candidates.')}
+        </p>
+        {isLocumMode && (
+          <div className="mt-4 flex justify-center">
+            <Button type="button" variant="ghost" size="sm" onClick={() => navigate('/recruiter/locum/candidates')}>
+              Search locum Doctors / Nurses
+            </Button>
+          </div>
+        )}
       </div>
 
       <form onSubmit={handleSubmit}>
@@ -181,30 +219,86 @@ export function PostJobPage() {
               label="Profession required"
               value={profession}
               onChange={e => setProfession(e.target.value)}
-              options={[
-                {label:'Doctor',value:'Doctor'},{label:'Nurse',value:'Nurse'},
-                {label:'Pharmacist',value:'Pharmacist'},{label:'Lab Technician',value:'Lab Technician'},
-                {label:'Physiotherapist',value:'Physiotherapist'},{label:'Radiologist',value:'Radiologist'},
-                {label:'Paramedic',value:'Paramedic'},{label:'Hospital Admin',value:'Hospital Admin'}
-              ]}
+              options={isLocumMode
+                ? [
+                    {label:'Doctor',value:'Doctor'},{label:'Nurse',value:'Nurse'},
+                  ]
+                : [
+                    {label:'Doctor',value:'Doctor'},{label:'Nurse',value:'Nurse'},
+                    {label:'Pharmacist',value:'Pharmacist'},{label:'Lab Technician',value:'Lab Technician'},
+                    {label:'Physiotherapist',value:'Physiotherapist'},{label:'Radiologist',value:'Radiologist'},
+                    {label:'Paramedic',value:'Paramedic'},{label:'Hospital Admin',value:'Hospital Admin'}
+                  ]
+              }
               className="mb-0"
             />
             <FormInput label="Department" value={department} onChange={e => setDepartment(e.target.value)} placeholder="e.g. Internal Medicine" className="mb-0" />
           </div>
 
           <div className="grid sm:grid-cols-3 gap-3 [&>div]:mb-0">
-            <FormSelect
-              label="Employment type"
-              value={employmentType}
-              onChange={e => setEmploymentType(e.target.value)}
-              options={[
-                {label:'Full-time',value:'Full-time'},{label:'Part-time',value:'Part-time'},
-                {label:'Contract',value:'Contract'},{label:'Locum',value:'Locum'}
-              ]}
-            />
+            {isLocumMode ? (
+              <FormInput label="Employment type" value="Locum" disabled />
+            ) : (
+              <FormSelect
+                label="Employment type"
+                value={employmentType}
+                onChange={e => setEmploymentType(e.target.value)}
+                options={[
+                  {label:'Full-time',value:'Full-time'},{label:'Part-time',value:'Part-time'},
+                  {label:'Contract',value:'Contract'}
+                ]}
+              />
+            )}
             <FormInput label="Number of openings" type="number" value={openings} onChange={e => setOpenings(e.target.value)} min="1" />
             <FormInput label="Job location" value={location} onChange={e => setLocation(e.target.value)} placeholder="e.g. Delhi NCR" />
           </div>
+
+          {isLocumMode && (
+            <div className="mt-1">
+              <div className="grid sm:grid-cols-3 gap-3 [&>div]:mb-0">
+                <FormInput
+                  label="Hours per day"
+                  type="number"
+                  min="1"
+                  value={locumHoursPerDay}
+                  onChange={e => setLocumHoursPerDay(e.target.value)}
+                  placeholder="e.g. 8"
+                />
+                <FormInput
+                  label="Shift start time"
+                  type="time"
+                  value={locumShiftStart}
+                  onChange={e => setLocumShiftStart(e.target.value)}
+                />
+                <FormInput
+                  label="Shift end time"
+                  type="time"
+                  value={locumShiftEnd}
+                  onChange={e => setLocumShiftEnd(e.target.value)}
+                />
+              </div>
+
+              <div className="mb-[18px]">
+                <label className="block text-[13px] font-medium text-gray-700 mb-2">Days of week</label>
+                <div className="flex flex-wrap gap-2">
+                  {['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(day => (
+                    <button
+                      key={day}
+                      type="button"
+                      onClick={() => toggleLocumDay(day)}
+                      className={`px-3.5 py-1.5 border rounded-full text-[13px] transition-colors ${
+                        locumDaysOfWeek.includes(day)
+                          ? 'border-blue-600 bg-blue-50 text-blue-700 font-medium'
+                          : 'border-border bg-white text-gray-700 hover:border-blue-200 hover:bg-blue-50'
+                      }`}
+                    >
+                      {day}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
         </StepCard>
 
         {/* Step 2: Requirements & Salary */}

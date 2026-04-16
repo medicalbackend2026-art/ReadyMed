@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Badge } from '../../components/Badge'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { Button } from '../../components/Button'
-import { useAppContext } from '../../context/AppContext'
 import { getAuth } from 'firebase/auth'
 
 // Custom Modal Component for Candidate Profile
@@ -24,7 +22,7 @@ function CandidateProfileModal({ isOpen, onClose, candidate, onInvite, isInvited
             </div>
             <div>
               <div className="text-lg font-semibold text-gray-900">{candidate.name}</div>
-              <div className="text-[13px] text-gray-500">{candidate.profession} · {candidate.location}</div>
+              <div className="text-[13px] text-gray-500">{candidate.profession || '—'}</div>
             </div>
           </div>
           <button onClick={onClose} className="text-xl text-gray-400 hover:text-gray-700 p-1">&times;</button>
@@ -70,7 +68,8 @@ function CandidateProfileModal({ isOpen, onClose, candidate, onInvite, isInvited
 
         <div className="mb-[18px]">
           <div className="text-sm font-semibold text-gray-900 mb-2 pb-1.5 border-b border-border">Preferences</div>
-          {candidate.expectedSalary && <div className="flex justify-between py-1 text-[13px]"><span className="text-gray-500">Expected salary</span><span className="font-medium text-gray-900">{candidate.expectedSalary}</span></div>}
+          <div className="flex justify-between py-1 text-[13px]"><span className="text-gray-500">Current salary</span><span className="font-medium text-gray-900">{candidate.currentSalary || '—'}</span></div>
+          <div className="flex justify-between py-1 text-[13px]"><span className="text-gray-500">Expected salary</span><span className="font-medium text-gray-900">{candidate.expectedSalary || '—'}</span></div>
           {candidate.noticePeriod && <div className="flex justify-between py-1 text-[13px]"><span className="text-gray-500">Notice period</span><span className="font-medium text-gray-900">{candidate.noticePeriod}</span></div>}
           {candidate.preferredJobType && <div className="flex justify-between py-1 text-[13px]"><span className="text-gray-500">Job type</span><span className="font-medium text-gray-900">{candidate.preferredJobType}</span></div>}
           {candidate.openToRelocation && <div className="flex justify-between py-1 text-[13px]"><span className="text-gray-500">Open to relocation</span><span className="font-medium text-gray-900">{candidate.openToRelocation}</span></div>}
@@ -100,7 +99,8 @@ function CandidateProfileModal({ isOpen, onClose, candidate, onInvite, isInvited
 
 export function CandidateSearchPage() {
   const navigate = useNavigate()
-  const { candidates: localCandidates } = useAppContext()
+  const locationRouter = useLocation()
+  const isLocumMode = locationRouter.pathname.startsWith('/recruiter/locum')
   const [candidates, setCandidates] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -109,16 +109,15 @@ export function CandidateSearchPage() {
   const [invitedIds, setInvitedIds] = useState(new Set())
   const [filters, setFilters] = useState({
     profession: [],
-    location: [],
     jobType: [],
     noticePeriod: [],
   })
-  const [openSections, setOpenSections] = useState({ profession: false, location: false, jobType: false, noticePeriod: false })
+  const [openSections, setOpenSections] = useState({ profession: false, jobType: false, noticePeriod: false })
 
   const toggleSection = (key) => setOpenSections(prev => ({ ...prev, [key]: !prev[key] }))
 
-  const clearAll = () => setFilters({ profession: [], location: [], jobType: [], noticePeriod: [] })
-  const activeFilterCount = filters.profession.length + filters.location.length + filters.jobType.length + filters.noticePeriod.length
+  const clearAll = () => setFilters({ profession: [], jobType: [], noticePeriod: [] })
+  const activeFilterCount = filters.profession.length + filters.jobType.length + filters.noticePeriod.length
 
   useEffect(() => {
     const fetchCandidates = async () => {
@@ -160,17 +159,18 @@ export function CandidateSearchPage() {
   }
 
   const filteredCandidates = candidates.filter(cand => {
+    if (isLocumMode) {
+      const p = String(cand.profession || '').toLowerCase()
+      const allowed = p.includes('doctor') || p.includes('nurse')
+      if (!allowed) return false
+    }
+
     const searchMatch = !searchTerm ||
       cand.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      (cand.profession || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (cand.location || '').toLowerCase().includes(searchTerm.toLowerCase())
-    
+      (cand.profession || '').toLowerCase().includes(searchTerm.toLowerCase())
+
     const profMatch = filters.profession.length === 0 || filters.profession.some(prof => 
       (cand.profession || '').toLowerCase().includes(prof.toLowerCase())
-    )
-
-    const locMatch = filters.location.length === 0 || filters.location.some(loc => 
-      (cand.location || '').toLowerCase().includes(loc.toLowerCase())
     )
 
     const jobTypeMatch = filters.jobType.length === 0 || filters.jobType.some(jt =>
@@ -180,8 +180,8 @@ export function CandidateSearchPage() {
     const noticeMatch = filters.noticePeriod.length === 0 || filters.noticePeriod.some(np =>
       (cand.noticePeriod || '').toLowerCase().includes(np.toLowerCase())
     )
-    
-    return searchMatch && profMatch && locMatch && jobTypeMatch && noticeMatch
+
+    return searchMatch && profMatch && jobTypeMatch && noticeMatch
   })
 
   const handleInvite = (id) => {
@@ -223,29 +223,21 @@ export function CandidateSearchPage() {
           {[
             {
               key: 'profession', label: 'Profession',
-              items: [
-                { label: 'Doctor / Surgeon', value: 'doctor' },
-                { label: 'Nurse', value: 'nurse' },
-                { label: 'Pharmacist', value: 'pharmacist' },
-                { label: 'Lab Technician', value: 'lab' },
-                { label: 'Physiotherapist', value: 'physio' },
-                { label: 'Radiologist', value: 'radiolog' },
-                { label: 'Paramedic', value: 'paramedic' },
-                { label: 'Hospital Admin', value: 'admin' },
-              ]
-            },
-            {
-              key: 'location', label: 'Location',
-              items: [
-                { label: 'Mumbai', value: 'mumbai' },
-                { label: 'Delhi NCR', value: 'delhi' },
-                { label: 'Bangalore', value: 'bangalore' },
-                { label: 'Hyderabad', value: 'hyderabad' },
-                { label: 'Chennai', value: 'chennai' },
-                { label: 'Pune', value: 'pune' },
-                { label: 'Kolkata', value: 'kolkata' },
-                { label: 'Ahmedabad', value: 'ahmedabad' },
-              ]
+              items: isLocumMode
+                ? [
+                    { label: 'Doctor / Surgeon', value: 'doctor' },
+                    { label: 'Nurse', value: 'nurse' },
+                  ]
+                : [
+                    { label: 'Doctor / Surgeon', value: 'doctor' },
+                    { label: 'Nurse', value: 'nurse' },
+                    { label: 'Pharmacist', value: 'pharmacist' },
+                    { label: 'Lab Technician', value: 'lab' },
+                    { label: 'Physiotherapist', value: 'physio' },
+                    { label: 'Radiologist', value: 'radiolog' },
+                    { label: 'Paramedic', value: 'paramedic' },
+                    { label: 'Hospital Admin', value: 'admin' },
+                  ]
             },
             {
               key: 'jobType', label: 'Job Type',
@@ -315,21 +307,17 @@ export function CandidateSearchPage() {
       <main className="p-5 md:py-7 md:px-8">
         
         <button 
-          onClick={() => navigate('/recruiter/services')}
+          onClick={() => navigate(isLocumMode ? '/recruiter/locum/post' : '/recruiter/services')}
           className="mb-6 inline-flex items-center gap-2 px-3 py-2 text-teal-600 hover:bg-teal-50 rounded-lg transition-colors font-medium text-sm"
         >
-          ← Back to Services
+          ← Back to {isLocumMode ? 'Locum posting' : 'Services'}
         </button>
 
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 gap-4">
           <div>
-            <h2 className="font-serif text-2xl font-normal text-gray-900">Search candidates</h2>
+            <h2 className="font-serif text-2xl font-normal text-gray-900">{isLocumMode ? 'Locum candidates' : 'Search candidates'}</h2>
             <div className="text-[13px] text-gray-500 mt-1">Showing {filteredCandidates.length} professional matching your criteria</div>
           </div>
-          <select className="px-3 py-2 border border-border rounded-lg text-[13px] bg-white text-gray-700 outline-none w-full sm:w-auto">
-            <option>Best match</option>
-            <option>Experience: High to low</option>
-          </select>
         </div>
 
         <div className="space-y-[14px]">
@@ -358,14 +346,14 @@ export function CandidateSearchPage() {
                   <div className="flex justify-between items-start mb-1">
                     <div>
                       <div className="text-base font-semibold text-gray-900 truncate">{cand.name}</div>
-                      <div className="text-sm text-gray-500 mb-2 truncate">{cand.profession}{cand.location ? ` · ${cand.location}` : ''}</div>
+                      <div className="text-sm text-gray-500 mb-2 truncate">{cand.profession || '—'}</div>
                     </div>
                   </div>
                   
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 bg-gray-50 rounded-lg p-2.5 mb-3">
                     <div><div className="text-[10px] uppercase tracking-[0.05em] text-gray-400 mb-0.5">Experience</div><div className="text-[13px] font-semibold text-gray-900">{cand.experience || '—'}</div></div>
-                    <div><div className="text-[10px] uppercase tracking-[0.05em] text-gray-400 mb-0.5">Location</div><div className="text-[13px] font-semibold text-gray-900">{cand.location || '—'}</div></div>
-                    <div><div className="text-[10px] uppercase tracking-[0.05em] text-gray-400 mb-0.5">Job Type</div><div className="text-[13px] font-semibold text-gray-900">{cand.preferredJobType || '—'}</div></div>
+                    <div><div className="text-[10px] uppercase tracking-[0.05em] text-gray-400 mb-0.5">Current Salary</div><div className="text-[13px] font-semibold text-gray-900">{cand.currentSalary || '—'}</div></div>
+                    <div><div className="text-[10px] uppercase tracking-[0.05em] text-gray-400 mb-0.5">Expected Salary</div><div className="text-[13px] font-semibold text-gray-900">{cand.expectedSalary || '—'}</div></div>
                     <div><div className="text-[10px] uppercase tracking-[0.05em] text-gray-400 mb-0.5">Notice Period</div><div className="text-[13px] font-semibold text-gray-900">{cand.noticePeriod || '—'}</div></div>
                   </div>
                   {cand.skills?.length > 0 && (

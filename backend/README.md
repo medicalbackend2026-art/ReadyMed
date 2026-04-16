@@ -7,21 +7,25 @@ This is the Python/FastAPI backend for ReadyMed. It replaces the original Node.j
 ## Project Structure
 
 ```
-backend_py/
-├── main.py                  # ← Entry point. Run: uvicorn main:app --reload
+backend/
+├── main.py                  # Legacy wrapper. Run: uvicorn main:app --reload
 │
-├── core/                    # Shared utilities — config, auth, Firebase
-│   ├── config.py            # All env variables loaded from .env
-│   ├── firebase.py          # Firebase Admin SDK singleton
-│   └── security.py          # get_current_user() dependency (verifies Firebase token)
-│
-├── api/
-│   ├── router.py            # Aggregates all feature routers under /api
-│   └── routes/
-│       ├── users.py         # /api/users — candidate profiles
-│       ├── companies.py     # /api/companies — recruiter/company profiles
-│       ├── jobs.py          # /api/jobs — job listings + apply
-│       └── applications.py  # /api/applications — view & update applications
+├── src/                     # Scalable "src" layout (recommended)
+│   ├── main.py              # App entrypoint (direct): uvicorn src.main:app --reload
+│   │
+│   ├── core/                # Shared utilities — config, auth, Firebase
+│   │   ├── config.py
+│   │   ├── firebase.py
+│   │   └── security.py
+│   │
+│   └── api/
+│       └── v1/
+│           ├── router.py
+│           └── endpoints/
+│               ├── users.py
+│               ├── companies.py
+│               ├── jobs.py
+│               └── applications.py
 │
 ├── requirements.txt
 └── .env.example             # Copy to .env and fill in Firebase credentials
@@ -35,7 +39,7 @@ backend_py/
 
 ```powershell
 # Windows (PowerShell)
-cd d:\ReadyMed\backend_py
+cd d:\ReadyMed\backend
 python -m venv venv
 .\venv\Scripts\Activate.ps1
 ```

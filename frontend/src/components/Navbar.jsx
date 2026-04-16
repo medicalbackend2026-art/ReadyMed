@@ -42,6 +42,10 @@ export function Navbar({ variant = 'public' }) {
 
   if (variant === 'employee') {
     const isServicesPage = location.pathname === '/services'
+    const isLocumMode = location.pathname.startsWith('/locum')
+    const dashboardPath = isLocumMode ? '/locum/dashboard' : '/dashboard'
+    const jobsPath = isLocumMode ? '/locum/jobs' : '/jobs'
+
     return (
       <nav className="sticky top-0 z-50 h-[64px] bg-white border-b border-border">
         <div className="container-main h-full flex items-center justify-between">
@@ -50,8 +54,8 @@ export function Navbar({ variant = 'public' }) {
           </Link>
           {!isServicesPage && (
             <div className="flex items-center gap-1.5">
-              <Link to="/dashboard" className={getLinkClass('/dashboard')}>Dashboard</Link>
-              <Link to="/jobs" className={getLinkClass('/jobs')}>Find Jobs</Link>
+              <Link to={dashboardPath} className={getLinkClass(dashboardPath)}>{isLocumMode ? 'Locum Dashboard' : 'Dashboard'}</Link>
+              <Link to={jobsPath} className={getLinkClass(jobsPath)}>{isLocumMode ? 'Locum Jobs' : 'Find Jobs'}</Link>
             </div>
           )}
           <div className="flex items-center gap-3">
@@ -69,10 +73,11 @@ export function Navbar({ variant = 'public' }) {
                 <div className="absolute right-0 top-[42px] w-44 bg-white border border-border rounded-xl shadow-lg py-1 z-50">
                   <Link
                     to="/profile-setup"
+                    state={isLocumMode ? { editMode: true, mode: 'locum', redirectTo: '/locum/dashboard' } : { editMode: true }}
                     onClick={() => setAvatarOpen(false)}
                     className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                   >
-                    <span></span> Profile
+                    <span></span> {isLocumMode ? 'Locum Profile' : 'Profile'}
                   </Link>
                   <div className="my-1 border-t border-border" />
                   <button
@@ -92,6 +97,13 @@ export function Navbar({ variant = 'public' }) {
 
   if (variant === 'recruiter') {
     const isServicesPage = location.pathname === '/recruiter/services'
+    const isLocumMode = location.pathname.startsWith('/recruiter/locum')
+
+    const candidatesPath = isLocumMode ? '/recruiter/locum/candidates' : '/recruiter/candidates'
+    const dashboardPath = isLocumMode ? '/recruiter/locum/dashboard' : '/recruiter/dashboard'
+    const applicationsPath = isLocumMode ? '/recruiter/locum/applications' : '/recruiter/applications'
+    const postPath = isLocumMode ? '/recruiter/locum/post' : '/recruiter/post-job'
+
     return (
       <nav className="sticky top-0 z-50 h-[64px] bg-white border-b border-border">
         <div className="container-main h-full flex items-center justify-between">
@@ -100,13 +112,13 @@ export function Navbar({ variant = 'public' }) {
           </Link>
           {!isServicesPage && (
             <div className="flex items-center gap-1.5">
-              <Link to="/recruiter/candidates" className={getLinkClass('/recruiter/candidates')}>Search</Link>
-              <Link to="/recruiter/dashboard" className={getLinkClass('/recruiter/dashboard')}>Dashboard</Link>
-              <Link to="/recruiter/applications" className={getLinkClass('/recruiter/applications')}>Applications</Link>
+              <Link to={candidatesPath} className={getLinkClass(candidatesPath)}>{isLocumMode ? 'Locum Search' : 'Search'}</Link>
+              <Link to={dashboardPath} className={getLinkClass(dashboardPath)}>{isLocumMode ? 'Locum Dashboard' : 'Dashboard'}</Link>
+              <Link to={applicationsPath} className={getLinkClass(applicationsPath)}>{isLocumMode ? 'Locum Applications' : 'Applications'}</Link>
             </div>
           )}
           <div className="flex items-center gap-3">
-            <Link to="/recruiter/post-job" className="px-4 py-[7px] text-[13px] font-semibold rounded-lg bg-teal-700 text-white hover:bg-teal-800 transition-colors">Post Job</Link>
+            <Link to={postPath} className="px-4 py-[7px] text-[13px] font-semibold rounded-lg bg-teal-700 text-white hover:bg-teal-800 transition-colors">{isLocumMode ? 'Post Locum' : 'Post Job'}</Link>
             <div className="relative" ref={avatarRef}>
               <button
                 onClick={() => setAvatarOpen(o => !o)}

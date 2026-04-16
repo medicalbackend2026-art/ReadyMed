@@ -762,9 +762,9 @@ export function AllServicesPage() {
 
                   const company = getCompanyProfile() || {}
                   const pct = getCompanyCompletion(company)
-                  const next = pct >= 75 ? '/recruiter/locum/post' : '/recruiter/company-setup'
+                  const next = pct >= 75 ? '/recruiter/locum/dashboard' : '/recruiter/company-setup'
 
-                  setTimeout(() => navigate(next, next === '/recruiter/company-setup' ? { state: { redirectTo: '/recruiter/locum/post' } } : undefined), 0)
+                  setTimeout(() => navigate(next, next === '/recruiter/company-setup' ? { state: { redirectTo: '/recruiter/locum/dashboard' } } : undefined), 0)
                 }}
                 className="group p-6 bg-white border-2 border-gray-100 hover:border-amber-500 rounded-xl text-left transition-all hover:bg-amber-50/50 flex flex-col items-center justify-center"
               >

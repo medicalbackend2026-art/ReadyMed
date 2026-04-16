@@ -128,7 +128,9 @@ export function CandidateSearchPage() {
           setLoading(false)
           return
         }
-        const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/users`, {
+        const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+        const url = `${baseUrl}/api/users${isLocumMode ? '?locumOnly=true' : ''}`
+        const res = await fetch(url, {
           headers: { Authorization: `Bearer ${token}` }
         })
         if (!res.ok) {
@@ -145,7 +147,7 @@ export function CandidateSearchPage() {
       }
     }
     fetchCandidates()
-  }, [])
+  }, [isLocumMode])
 
   const toggleArrayFilter = (field, value) => {
     setFilters(prev => {
@@ -160,6 +162,7 @@ export function CandidateSearchPage() {
 
   const filteredCandidates = candidates.filter(cand => {
     if (isLocumMode) {
+      if (!cand.locumEligible) return false
       const p = String(cand.profession || '').toLowerCase()
       const allowed = p.includes('doctor') || p.includes('nurse')
       if (!allowed) return false

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Link, useParams, useNavigate } from 'react-router-dom'
+import { Link, useParams, useNavigate, useLocation } from 'react-router-dom'
 import { Badge } from '../../components/Badge'
 import { Button } from '../../components/Button'
 import { Card } from '../../components/Card'
@@ -83,6 +83,10 @@ function ApplyModal({ isOpen, onClose, job, currentUser, onApply }) {
 export function JobDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
+  const isLocumMode = location.pathname.startsWith('/locum')
+  const jobsBasePath = isLocumMode ? '/locum/jobs' : '/jobs'
+
   const { browseJobs: jobs, myApplications, applyForJob, currentUser, toggleSaveJob, isJobSaved } = useAppContext()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [fetchedJob, setFetchedJob] = useState(null)
@@ -124,7 +128,7 @@ export function JobDetailPage() {
       <div className="max-w-[920px] mx-auto px-6 py-20 text-center font-sans">
         <h2 className="text-2xl font-serif mb-4">Job Not Found</h2>
         <p className="text-gray-500 mb-6">The job you are looking for does not exist or has been removed.</p>
-        <Button onClick={() => navigate('/jobs')} variant="primary">Back to Jobs</Button>
+        <Button onClick={() => navigate(jobsBasePath)} variant="primary">Back to {isLocumMode ? 'Locum jobs' : 'Jobs'}</Button>
       </div>
     )
   }
@@ -143,7 +147,7 @@ export function JobDetailPage() {
       
       {/* Breadcrumbs */}
       <div className="flex items-center gap-1.5 text-[13px] text-gray-400 mb-6">
-        <Link to="/jobs" className="text-gray-500 hover:text-teal-600">Jobs</Link>
+        <Link to={jobsBasePath} className="text-gray-500 hover:text-teal-600">{isLocumMode ? 'Locum shifts' : 'Jobs'}</Link>
         <span>›</span>
         <span className="truncate">{job.title} — {job.hospital}</span>
       </div>
@@ -248,7 +252,7 @@ export function JobDetailPage() {
             <h3 className="text-sm font-semibold text-gray-900 mb-1 pt-1">Similar openings</h3>
             <div className="divide-y divide-border">
               {jobs.filter(j => j.id !== job.id && j.specialisation === job.specialisation).slice(0, 3).map(simJob => (
-                <Link key={simJob.id} to={`/jobs/${simJob.id}`} className="block py-3 group">
+                <Link key={simJob.id} to={`${jobsBasePath}/${simJob.id}`} className="block py-3 group">
                   <div className="text-[13px] font-semibold text-gray-900 mb-0.5 group-hover:text-teal-600 transition-colors">{simJob.title}</div>
                   <div className="text-xs text-gray-500">{simJob.hospital} · {simJob.location.split(',')[0]} · {simJob.salary.split(' ')[0]}</div>
                 </Link>

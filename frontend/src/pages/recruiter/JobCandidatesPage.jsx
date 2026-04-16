@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { useAppContext } from '../../context/AppContext'
 import { auth } from '../../firebase'
 
@@ -28,7 +28,11 @@ function formatDate(iso) {
 export function JobCandidatesPage() {
   const { jobId } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
   const { jobs, applications, updateApplicationStatus, loadRecruiterData } = useAppContext()
+
+  const isLocumMode = location.pathname.startsWith('/recruiter/locum')
+  const applicationsPath = isLocumMode ? '/recruiter/locum/applications' : '/recruiter/applications'
 
   const [jobApps, setJobApps] = useState([])
   const [candidateProfiles, setCandidateProfiles] = useState({}) // uid → profile
@@ -125,7 +129,7 @@ export function JobCandidatesPage() {
     <div className="max-w-[1100px] mx-auto px-6 py-8 pb-20 font-sans">
       {/* Header */}
       <div className="mb-6">
-        <button onClick={() => navigate('/recruiter/applications')} className="flex items-center gap-1.5 text-[13px] text-gray-500 hover:text-gray-800 mb-4 transition-colors">
+        <button onClick={() => navigate(applicationsPath)} className="flex items-center gap-1.5 text-[13px] text-gray-500 hover:text-gray-800 mb-4 transition-colors">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
           Back to all jobs
         </button>

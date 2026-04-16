@@ -332,9 +332,10 @@ export function JobFeedPage() {
           ) : displayedJobs.map((job) => {
             const logo = getLogoStyle(job.hospital)
             const matchScore = Math.floor(Math.random() * (98 - 70) + 70) // Mock random match score between 70-98
+            const jobLinkBase = isLocumMode ? '/locum/jobs' : '/jobs'
 
             return (
-              <Link key={job.id} to={`/jobs/${job.id}`} className="block bg-white border border-border rounded-xl p-5 transition-all hover:border-teal-200 hover:shadow-md hover:-translate-y-px flex gap-4 relative cursor-pointer">
+              <Link key={job.id} to={`${jobLinkBase}/${job.id}`} className="block bg-white border border-border rounded-xl p-5 transition-all hover:border-teal-200 hover:shadow-md hover:-translate-y-px flex gap-4 relative cursor-pointer">
                 <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-base font-bold shrink-0 bg-${logo.color}-50 text-${logo.color}-700`}>
                   {logo.initials}
                 </div>
@@ -371,7 +372,7 @@ export function JobFeedPage() {
                       <span className="text-[11px] font-semibold px-2.5 py-[3px] rounded-full bg-teal-50 text-teal-700 border border-teal-100">
                         {matchScore}% match
                       </span>
-                      <Button to={`/jobs/${job.id}`} variant="primary" size="sm" onClick={e => e.stopPropagation()}>Apply &rarr;</Button>
+                      <Button to={`${jobLinkBase}/${job.id}`} variant="primary" size="sm" onClick={e => e.stopPropagation()}>Apply &rarr;</Button>
                     </div>
                   </div>
                 </div>

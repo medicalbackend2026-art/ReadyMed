@@ -69,10 +69,8 @@ export function AppProvider({ children }) {
     const profile = getUserProfile()
     if (profile?.name) {
       const role = profile.role || 'employee'
-      console.log('getStoredUser from localStorage:', { name: profile.name, role, email: profile.email })
       return { name: profile.name, role, email: profile.email || '' }
     }
-    console.log('getStoredUser: no profile found, returning Guest')
     return { name: 'Guest', role: 'employee', email: '' }
   }
 
@@ -100,13 +98,26 @@ export function AppProvider({ children }) {
       ])
       const { jobs } = await jobsRes.json()
       const { applications: apps } = await appsRes.json()
-      if (jobs?.length) {
-        setRecruiterJobs(jobs)
-        localStorage.setItem(RECRUITER_JOBS_KEY, JSON.stringify(jobs))
+      if (jobs) {
+        setRecruiterJobs(prev => {
+          const serverIds = new Set(jobs.map(j => String(j.id)))
+          const localOnly = prev.filter(j => !serverIds.has(String(j.id)))
+          const merged = [...localOnly, ...jobs]
+          // Deduplicate by ID just in case
+          const unique = Array.from(new Map(merged.map(item => [String(item.id), item])).values())
+          localStorage.setItem(RECRUITER_JOBS_KEY, JSON.stringify(unique))
+          return unique
+        })
       }
       if (apps) {
-        setApplications(apps)
-        localStorage.setItem(RECRUITER_APPS_KEY, JSON.stringify(apps))
+        setApplications(prev => {
+          const serverIds = new Set(apps.map(a => String(a.id)))
+          const localOnly = prev.filter(a => !serverIds.has(String(a.id)))
+          const merged = [...localOnly, ...apps]
+          const unique = Array.from(new Map(merged.map(item => [String(item.id), item])).values())
+          localStorage.setItem(RECRUITER_APPS_KEY, JSON.stringify(unique))
+          return unique
+        })
       }
     } catch {}
   }
@@ -119,8 +130,16 @@ export function AppProvider({ children }) {
       const res = await fetch(`${API}/api/applications/mine`, { headers: { Authorization: `Bearer ${token}` } })
       const { applications: apps } = await res.json()
       if (apps) {
-        setMyApplications(apps)
-        localStorage.setItem(MY_APPS_KEY, JSON.stringify(apps))
+        setMyApplications(prev => {
+          // Merge logic: keep local items that are not in the server response based on jobId
+          const serverJobIds = new Set(apps.map(a => String(a.jobId)))
+          const localAppsToKeep = prev.filter(a => !serverJobIds.has(String(a.jobId)))
+          const merged = [...localAppsToKeep, ...apps]
+          // Deduplicate by ID just in case
+          const unique = Array.from(new Map(merged.map(item => [String(item.id), item])).values())
+          localStorage.setItem(MY_APPS_KEY, JSON.stringify(unique))
+          return unique
+        })
       }
     } catch {}
   }
@@ -143,47 +162,95 @@ export function AppProvider({ children }) {
     const job = [...browseJobs, ...recruiterJobs].find(j => String(j.id) === String(jobId));
     if (!job) return false;
 
-    const newApp = {
-      id: Date.now(),
-      jobId: String(jobId),
-      jobTitle: job.title,
-      jobType: job.type || job.employmentType || '',
-      hospital: job.hospital || '',
-      applicantName: applicantName || currentUser.name,
-      applicantEmail: currentUser.email || '',
-      coverNote: coverNote || '',
-      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-      appliedAt: new Date().toISOString(),
-      matchScore: '90%',
-      status: 'New',
-      candidateName: applicantName || currentUser.name,
-      candidateRole: 'Applicant',
-    };
+    // Prevent duplicate applications (local check first)
+    const hasAppliedAlready = myApplications.some(app => 
+      String(app.jobId) === String(jobId) ||
+      (app.jobTitle === job.title && (app.applicantUid || app.candidateName) === (currentUser?.uid || currentUser?.name))
+    );
+    if (hasAppliedAlready) {
+      console.warn('User has already applied for this job locally.');
+      return false;
+    }
 
-    // Save to local state instantly
-    const updatedMyApps = [newApp, ...myApplications]
-    setMyApplications(updatedMyApps)
-    localStorage.setItem(MY_APPS_KEY, JSON.stringify(updatedMyApps))
-
-    // Also add to recruiter's applications view
-    const updatedApps = [newApp, ...applications]
-    setApplications(updatedApps)
-    localStorage.setItem(RECRUITER_APPS_KEY, JSON.stringify(updatedApps))
-
-    // Sync to Firestore
+    // Sync to Firestore (check server for duplicate)
     try {
       const token = await auth.currentUser?.getIdToken()
       if (token) {
-        await fetch(`${API}/api/jobs/${jobId}/apply`, {
+        const response = await fetch(`${API}/api/jobs/${jobId}/apply`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ applicantName: newApp.applicantName, coverNote }),
+          body: JSON.stringify({ applicantName: applicantName || currentUser.name, coverNote }),
         })
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}))
+          const errorMsg = errorData.detail || 'Failed to submit application'
+          
+          // Handle 409 Conflict (duplicate application)
+          if (response.status === 409) {
+            return false; // Signal duplicate application
+          }
+          
+          return { error: errorMsg }; // Return other errors
+        }
+        
+        // Success! Application was submitted to backend.
+        // Now fetch fresh applications from backend asynchronously
+        // Don't block user experience on this fetch
+        (async () => {
+          try {
+            const token2 = await auth.currentUser?.getIdToken()
+            if (token2) {
+              // Fetch candidate's applications  
+              const myRes = await fetch(`${API}/api/applications/mine`, { 
+                headers: { Authorization: `Bearer ${token2}` } 
+              })
+              if (myRes.ok) {
+                const { applications: myApps } = await myRes.json()
+                if (myApps && myApps.length > 0) {
+                  setMyApplications(prev => {
+                    const serverIds = new Set(myApps.map(a => String(a.id)))
+                    const localOnly = prev.filter(a => !serverIds.has(String(a.id)))
+                    const merged = [...localOnly, ...myApps]
+                    const unique = Array.from(new Map(merged.map(item => [String(item.id), item])).values())
+                    localStorage.setItem(MY_APPS_KEY, JSON.stringify(unique))
+                    return unique
+                  })
+                }
+              }
+              
+              // Also refresh recruiter's applications
+              const recruiterAppsRes = await fetch(`${API}/api/applications/for-recruiter`, { 
+                headers: { Authorization: `Bearer ${token2}` } 
+              })
+              if (recruiterAppsRes.ok) {
+                const { applications: recruiterApps } = await recruiterAppsRes.json()
+                if (recruiterApps) {
+                  setApplications(prev => {
+                    const serverIds = new Set(recruiterApps.map(a => String(a.id)))
+                    const localOnly = prev.filter(a => !serverIds.has(String(a.id)))
+                    const merged = [...localOnly, ...recruiterApps]
+                    const unique = Array.from(new Map(merged.map(item => [String(item.id), item])).values())
+                    localStorage.setItem(RECRUITER_APPS_KEY, JSON.stringify(unique))
+                    return unique
+                  })
+                }
+              }
+            }
+          } catch (err) {
+            console.warn('Background sync of applications failed:', err)
+            // Don't fail - the application is already saved on backend
+          }
+        })()
+        
+        return true;
       }
     } catch (err) {
-      console.warn('Application saved locally but cloud sync failed:', err)
+      console.error('Application submission failed:', err)
+      return { error: 'Failed to submit application. Please try again.' }
     }
-    return true;
+    
+    return false;
   };
 
   const updateApplicationStatus = async (appId, newStatus) => {
@@ -240,6 +307,39 @@ export function AppProvider({ children }) {
     setCandidates(loadCandidates())
   }
 
+  const refreshApplications = async () => {
+    try {
+      const token = await auth.currentUser?.getIdToken().catch(() => null)
+      if (!token) return
+      
+      // Fetch recruiter's applications
+      const recruiterRes = await fetch(`${API}/api/applications/for-recruiter`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      if (recruiterRes.ok) {
+        const { applications: recruiterApps } = await recruiterRes.json()
+        if (recruiterApps) {
+          setApplications(recruiterApps)
+          localStorage.setItem(RECRUITER_APPS_KEY, JSON.stringify(recruiterApps))
+        }
+      }
+      
+      // Fetch candidate's applications  
+      const myRes = await fetch(`${API}/api/applications/mine`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      if (myRes.ok) {
+        const { applications: myApps } = await myRes.json()
+        if (myApps) {
+          setMyApplications(myApps)
+          localStorage.setItem(MY_APPS_KEY, JSON.stringify(myApps))
+        }
+      }
+    } catch (err) {
+      console.error('Error refreshing applications:', err)
+    }
+  }
+
   const value = {
     jobs: recruiterJobs,
     browseJobs,
@@ -257,6 +357,7 @@ export function AppProvider({ children }) {
     toggleSaveJob,
     isJobSaved,
     refreshCandidates,
+    refreshApplications,
     setCurrentUser,
     loadRecruiterData,
     loadMyApplications,

@@ -12,15 +12,6 @@ export function ProtectedRoute({ allowedRoles }) {
 
   const isGuest = !currentUser || currentUser.name === 'Guest' || !currentUser.email;
 
-  console.log('ProtectedRoute check:', { 
-    path: location.pathname, 
-    currentUser, 
-    userProfile, 
-    effectiveRole, 
-    allowedRoles, 
-    isGuest 
-  })
-
   // 1. If not logged in, redirect to login page
   if (isGuest) {
     return <Navigate to="/login" state={{ from: location }} replace />;
@@ -28,7 +19,6 @@ export function ProtectedRoute({ allowedRoles }) {
 
   // 2. If logged in but role does not match, redirect to appropriate home/dashboard
   if (allowedRoles && !allowedRoles.includes(effectiveRole)) {
-    console.log('Role mismatch! effectiveRole:', effectiveRole, 'allowedRoles:', allowedRoles)
     if (effectiveRole === 'recruiter') {
       return <Navigate to="/recruiter/services" replace />;
     }

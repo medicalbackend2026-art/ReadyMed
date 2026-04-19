@@ -1,17 +1,50 @@
-import React, { useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAppContext } from '../../context/AppContext'
 
 export function ManageApplicationsPage() {
-  const { jobs, applications, loadRecruiterData } = useAppContext()
+  const { jobs, applications, loadRecruiterData, getDebugInfo } = useAppContext()
   const navigate = useNavigate()
   const location = useLocation()
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(null)
+  const [debugLoading, setDebugLoading] = useState(false)
 
   const isLocumMode = location.pathname.startsWith('/recruiter/locum')
   const postPath = isLocumMode ? '/recruiter/locum/post' : '/recruiter/post-job'
   const applicationsPath = isLocumMode ? '/recruiter/locum/applications' : '/recruiter/applications'
 
-  useEffect(() => { loadRecruiterData() }, [])
+  // Load recruiter data on mount
+  useEffect(() => {
+    const initData = async () => {
+      try {
+        setLoadError(null)
+        await loadRecruiterData()
+        setLoading(false)
+      } catch (err) {
+        console.error('Error loading recruiter data:', err)
+        setLoadError('Failed to load applications')
+        setLoading(false)
+      }
+    }
+    initData()
+  }, [loadRecruiterData])
+
+  // Watch applications and update display
+  useEffect(() => {
+    if (applications.length > 0 || jobs.length > 0) {
+      setLoading(false)
+    }
+  }, [applications, jobs])
+
+  const handleDebugClick = async () => {
+    setDebugLoading(true)
+    try {
+      await getDebugInfo()
+    } finally {
+      setDebugLoading(false)
+    }
+  }
 
   const isLocumJob = (job) => {
     const t = String(job?.type || job?.employmentType || '').toLowerCase()
@@ -29,6 +62,8 @@ export function ManageApplicationsPage() {
   const visibleApplications = isLocumMode
     ? applications.filter(isLocumApplication)
     : applications.filter(a => !isLocumApplication(a))
+
+
 
   const getApplicantCount = (jobId, jobTitle) =>
     visibleApplications.filter(a => String(a.jobId) === String(jobId) || a.jobTitle === jobTitle).length
@@ -50,9 +85,19 @@ export function ManageApplicationsPage() {
           <h1 className="font-serif text-[26px] text-gray-900 leading-tight">{isLocumMode ? 'Locum Applications' : 'Applications'}</h1>
           <p className="text-[13px] text-gray-500 mt-1">Click on a job to review candidates and manage the pipeline.</p>
         </div>
-        <Link to={postPath} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-[13px] font-semibold rounded-lg transition-colors text-center">
-          + {isLocumMode ? 'Post locum shift' : 'Post new job'}
-        </Link>
+        <div className="flex gap-2">
+          <button
+            onClick={handleDebugClick}
+            disabled={debugLoading}
+            className="px-3 py-2 text-[12px] font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Check debug info in console"
+          >
+            {debugLoading ? 'Checking...' : 'Debug'}
+          </button>
+          <Link to={postPath} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-[13px] font-semibold rounded-lg transition-colors text-center">
+            + {isLocumMode ? 'Post locum shift' : 'Post new job'}
+          </Link>
+        </div>
       </div>
 
       {visibleJobs.length === 0 ? (

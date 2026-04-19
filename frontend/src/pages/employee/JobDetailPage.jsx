@@ -13,15 +13,22 @@ function ApplyModal({ isOpen, onClose, job, currentUser, onApply }) {
   const [coverNote, setCoverNote] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [trackingId, setTrackingId] = useState('')
+  const [error, setError] = useState('')
 
   if (!isOpen && !showToast) return null
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    setError('')
     setSubmitting(true)
-    const success = await onApply(job.id, { applicantName: currentUser?.name, coverNote })
+    const result = await onApply(job.id, { applicantName: currentUser?.name, coverNote })
     setSubmitting(false)
-    if (success !== false) {
+    
+    if (result === false) {
+      setError('You have already applied to this job. You cannot apply twice.')
+    } else if (result?.error) {
+      setError(result.error)
+    } else if (result) {
       setTrackingId(`RMD-${Math.floor(Math.random() * 1000000)}`)
       onClose()
       setShowToast(true)
@@ -46,6 +53,12 @@ function ApplyModal({ isOpen, onClose, job, currentUser, onApply }) {
             </div>
           </div>
 
+          {error && (
+            <div className="mb-4 px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-600">
+              {error}
+            </div>
+          )}
+
           <div className="mb-[18px]">
             <label className="block text-[13px] font-medium text-gray-700 mb-1.5">Cover note (optional)</label>
             <textarea 
@@ -54,6 +67,7 @@ function ApplyModal({ isOpen, onClose, job, currentUser, onApply }) {
               value={coverNote}
               onChange={e => setCoverNote(e.target.value)}
               placeholder="Add a brief note explaining why you're a good fit for this role..."
+              disabled={submitting}
             ></textarea>
           </div>
 

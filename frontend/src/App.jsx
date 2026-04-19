@@ -68,7 +68,14 @@ function AuthLayout() {
   )
 }
 
-
+function OnboardingLayout() {
+  return (
+    <>
+      <Navbar variant="onboarding" />
+      <Outlet />
+    </>
+  )
+}
 
 export default function App() {
   return (
@@ -83,12 +90,13 @@ export default function App() {
           {/* Auth Routes */}
           <Route element={<AuthLayout />}>
             <Route path="/login" element={<LoginPage />} />
-            <Route path="/signup" element={<SignupPage />} />
             <Route path="/otp-verify" element={<OTPVerifyPage />} />
-            <Route path="/role-selection" element={<RoleSelectionPage />} />
           </Route>
 
-
+          {/* Onboarding Routes */}
+          <Route element={<OnboardingLayout />}>
+            <Route path="/role-selection" element={<RoleSelectionPage />} />
+          </Route>
 
           {/* Employee Routes - PROTECTED */}
           <Route element={<ProtectedRoute allowedRoles={['employee']} />}>

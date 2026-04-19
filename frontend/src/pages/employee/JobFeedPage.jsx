@@ -312,7 +312,7 @@ export function JobFeedPage() {
         
         <button 
           onClick={() => navigate('/services')}
-          className="mb-6 inline-flex items-center gap-2 px-3 py-2 text-teal-600 hover:bg-teal-50 rounded-lg transition-colors font-medium text-sm"
+          className="mb-6 inline-flex items-center gap-2 px-4 py-2 text-[13px] font-semibold text-teal-700 bg-teal-50 border border-teal-300 rounded-lg hover:bg-teal-100 transition-colors"
         >
           ← Back to Services
         </button>

@@ -10,7 +10,7 @@ export function Footer({ variant = 'public' }) {
   }
 
   return (
-    <footer className="border-t border-page-border py-10 px-12 mt-20">
+    <footer className="border-t border-page-border py-10 px-5">
       <div className="max-w-[1240px] mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6">
         <a href="/" className="font-serif text-xl font-semibold text-page-text2 decoration-transparent">
           Ready<em className="text-page-accent not-italic">MD</em>

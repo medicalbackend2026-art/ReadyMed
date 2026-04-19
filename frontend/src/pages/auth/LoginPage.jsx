@@ -128,10 +128,23 @@ export function LoginPage() {
   }
 
   return (
-    <div className="grid md:grid-cols-2 min-h-[calc(100vh)] font-sans">
+    <div className="grid md:grid-cols-2 h-[calc(100vh-68px)] mt-[68px] overflow-hidden font-sans bg-white">
 
       {/* Left Panel */}
       <div className="hidden md:flex flex-col justify-center p-12 relative overflow-hidden bg-gradient-to-br from-teal-800 to-teal-700">
+        <Link
+          to="/"
+          className="absolute top-6 left-6 md:top-15 md:left-15 inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white/20 bg-black/10 backdrop-blur-md text-[13px] font-medium text-white/90 hover:text-white hover:bg-black/20 hover:border-white/30 transition-all group z-10"
+        >
+          <svg
+            width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+            className="group-hover:-translate-x-0.5 transition-transform"
+          >
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+          Back
+        </Link>
         <div className="absolute -bottom-[20%] -left-[10%] w-[400px] h-[400px] rounded-full bg-[radial-gradient(circle,rgba(93,202,165,0.12)_0%,transparent_70%)]" />
         <div className="relative z-10">
           <div className="text-[11px] font-semibold uppercase tracking-[0.1em] text-teal-200 mb-5">
@@ -157,10 +170,13 @@ export function LoginPage() {
       </div>
 
       {/* Right Panel */}
-      <div className="flex items-center justify-center p-8 md:p-12">
+      <div className="relative flex items-center justify-center p-4 sm:p-8 md:p-12 h-full overflow-y-auto w-full">
+
+        {/* Back Button */}
+
         <div className="w-full max-w-[400px]">
-          <h1 className="font-serif text-[28px] text-gray-900 mb-1.5">Log in to ReadyMD</h1>
-          <p className="text-sm text-gray-500 mb-7">Sign in to access your account.</p>
+          <h1 className="font-serif text-[28px] text-gray-900 mb-1.5">Welcome to ReadyMD</h1>
+          <p className="text-sm text-gray-500 mb-7">Log in or create an account to continue.</p>
 
           {/* Google Sign In */}
           <button
@@ -168,7 +184,7 @@ export function LoginPage() {
             disabled={loading}
             className="w-full py-[11px] border border-border rounded-lg text-sm font-medium text-gray-700 bg-white flex items-center justify-center gap-2 hover:bg-gray-50 hover:border-gray-200 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            {loading ? 'Logging in...' : (
+            {loading ? 'Continuing...' : (
               <>
                 <svg width="18" height="18" viewBox="0 0 18 18">
                   <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 01-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" />
@@ -187,11 +203,6 @@ export function LoginPage() {
               {error}
             </div>
           )}
-
-          <div className="text-center text-[13px] text-gray-500 mt-6">
-            Don't have an account?{' '}
-            <Link to="/signup" className="font-semibold text-teal-600 hover:underline">Sign up free</Link>
-          </div>
         </div>
       </div>
 

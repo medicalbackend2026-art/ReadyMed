@@ -16,6 +16,49 @@ import { Button } from '../../components/Button'
 import { saveUserProfile, getUserProfile, getProfileCompletion } from '../../hooks/useUserProfile'
 import { useAppContext } from '../../context/AppContext'
 
+// Field helpers — controlled spacing (avoids FormInput's fixed mb-[18px])
+function CompactField({ label, type = 'text', placeholder, value, onChange, required = true, wrapClass = '' }) {
+  return (
+    <div className={wrapClass}>
+      <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
+      <input
+        type={type}
+        placeholder={placeholder}
+        required={required}
+        value={value}
+        onChange={onChange}
+        className="w-full px-3.5 py-2.5 border border-border rounded-lg text-sm text-gray-900 bg-white outline-none focus:border-teal-300 focus:ring-2 focus:ring-teal-200/30 placeholder:text-gray-300 transition-all"
+      />
+    </div>
+  )
+}
+
+function CompactPasswordField({ label, placeholder, value, onChange }) {
+  const [show, setShow] = useState(false)
+  return (
+    <div>
+      <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
+      <div className="relative">
+        <input
+          type={show ? 'text' : 'password'}
+          placeholder={placeholder}
+          required
+          value={value}
+          onChange={onChange}
+          className="w-full px-3.5 py-2.5 pr-12 border border-border rounded-lg text-sm text-gray-900 bg-white outline-none focus:border-teal-300 focus:ring-2 focus:ring-teal-200/30 placeholder:text-gray-300 transition-all"
+        />
+        <button
+          type="button"
+          onClick={() => setShow(s => !s)}
+          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] font-medium text-gray-400 hover:text-gray-700 transition-colors"
+        >
+          {show ? 'Hide' : 'Show'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
 const ROLE_CONFIG = {
   employee: {
     label: 'Professional',
@@ -194,23 +237,23 @@ export function SignupPage() {
   }
 
   return (
-    <div className="grid md:grid-cols-2 min-h-[calc(95vh)] font-sans">
+    <div className="grid md:grid-cols-2 h-[calc(100vh-68px)] mt-[68px] overflow-hidden font-sans bg-white">
 
       {/* Left Panel */}
-      <div className="hidden md:flex flex-col justify-center p-12 relative overflow-hidden bg-gradient-to-br from-teal-800 to-teal-700 transition-all duration-500">
+      <div className="hidden md:flex flex-col justify-center p-8 relative overflow-hidden bg-gradient-to-br from-teal-800 to-teal-700 transition-all duration-500">
         <div className="absolute -top-[20%] -right-[15%] w-[400px] h-[400px] rounded-full bg-[radial-gradient(circle,rgba(93,202,165,0.15)_0%,transparent_70%)]" />
         <div className="relative z-10">
           <div className="text-[11px] font-semibold uppercase tracking-[0.1em] text-teal-200 mb-3">
             Joining as {config.label}
           </div>
           <div className="text-4xl mb-4">{config.emoji}</div>
-          <h2 className="font-serif text-[34px] text-white font-normal leading-tight mb-4">
+          <h2 className="font-serif text-[28px] text-white font-normal leading-tight mb-3">
             {config.heading}
           </h2>
-          <p className="text-[15px] text-white/65 leading-[1.7] max-w-[380px] mb-8">
+          <p className="text-[13px] text-white/65 leading-[1.6] max-w-[380px] mb-6">
             {config.sub}
           </p>
-          <div className="flex flex-col gap-[14px]">
+          <div className="flex flex-col gap-2">
             {config.features.map((feature, i) => (
               <div key={i} className="flex items-center gap-3 text-sm text-white/80">
                 <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-sm shrink-0">
@@ -224,13 +267,29 @@ export function SignupPage() {
       </div>
 
       {/* Right Panel - Form */}
-      <div className="flex items-center justify-center p-8 md:p-12 my-auto">
-        <div className="w-full max-w-[400px]">
-          <h1 className="font-serif text-[28px] text-gray-900 mb-1.5">Create your account</h1>
-          <p className="text-sm text-gray-500 mb-5">Fill in your details to get started with ReadyMD.</p>
+      <div className="relative flex flex-col items-center justify-center h-full overflow-hidden px-8 py-3 w-full bg-white">
+        
+        {/* Back Button */}
+        <Link
+          to="/"
+          className="absolute top-6 left-6 md:top-8 md:left-8 inline-flex items-center gap-2 px-4 py-2 rounded-full border border-gray-200 bg-white text-[13px] font-medium text-gray-500 hover:text-gray-900 hover:border-teal-600 hover:shadow-sm transition-all group z-10"
+        >
+          <svg
+            width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+            className="group-hover:-translate-x-0.5 transition-transform"
+          >
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+          Home
+        </Link>
+        
+        <div className="w-full max-w-[460px]">
+          <h1 className="font-serif text-[26px] text-gray-900 mb-1">Create your account</h1>
+          <p className="text-[15px] text-gray-500 mb-3">Fill in your details to get started with ReadyMD.</p>
 
           {/* Role Toggle */}
-          <div className="relative flex p-1 bg-gray-100 rounded-lg mb-8">
+          <div className="relative flex p-1 bg-gray-100 rounded-lg mb-3">
             <div
               className="absolute top-1 bottom-1 w-[calc(50%-4px)] bg-white rounded-md shadow-sm transition-transform duration-300 ease-in-out"
               style={{ transform: role === 'recruiter' ? 'translateX(calc(100% + 4px))' : 'translateX(0)' }}
@@ -238,7 +297,7 @@ export function SignupPage() {
             <button
               type="button"
               onClick={() => setRole('employee')}
-              className={`relative z-10 flex-1 py-2 text-[13px] font-semibold rounded-md transition-colors duration-200 ${
+              className={`relative z-10 flex-1 py-2 text-sm font-semibold rounded-md transition-colors duration-200 ${
                 role === 'employee' ? 'text-gray-900' : 'text-gray-500 hover:text-gray-700'
               }`}
             >
@@ -247,7 +306,7 @@ export function SignupPage() {
             <button
               type="button"
               onClick={() => setRole('recruiter')}
-              className={`relative z-10 flex-1 py-2 text-[13px] font-semibold rounded-md transition-colors duration-200 ${
+              className={`relative z-10 flex-1 py-2 text-sm font-semibold rounded-md transition-colors duration-200 ${
                 role === 'recruiter' ? 'text-gray-900' : 'text-gray-500 hover:text-gray-700'
               }`}
             >
@@ -259,7 +318,7 @@ export function SignupPage() {
           <button
             onClick={handleGoogle}
             disabled={loading}
-            className="w-full py-[11px] border border-border rounded-lg text-sm font-medium text-gray-700 bg-white flex items-center justify-center gap-2 hover:bg-gray-50 hover:border-gray-200 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+            className="w-full py-2 border border-border rounded-lg text-sm font-medium text-gray-700 bg-white flex items-center justify-center gap-2 hover:bg-gray-50 hover:border-gray-300 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
           >
             <svg width="18" height="18" viewBox="0 0 18 18">
               <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 01-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" />
@@ -270,13 +329,13 @@ export function SignupPage() {
             Continue with Google
           </button>
 
-          <div className="flex items-center gap-3 my-5 text-xs text-gray-400 before:content-[''] before:flex-1 before:h-px before:bg-border after:content-[''] after:flex-1 after:h-px after:bg-border">
+          <div className="flex items-center gap-3 my-3 text-xs text-gray-400 before:content-[''] before:flex-1 before:h-px before:bg-border after:content-[''] after:flex-1 after:h-px after:bg-border">
             or sign up with email
           </div>
 
           {/* Error message */}
           {error && (
-            <div className="mb-4 px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-600">
+            <div className="mb-2 px-3 py-1.5 rounded-lg bg-red-50 border border-red-200 text-xs text-red-600">
               {error}
             </div>
           )}
@@ -285,142 +344,75 @@ export function SignupPage() {
 
           {step === 'form' ? (
             <form onSubmit={handleSendOtp}>
-              <div className="grid grid-cols-2 gap-3 mb-[18px]">
-                <div className="mb-0 [&>div]:mb-0">
-                  <FormInput
-                    label="First name"
-                    placeholder="Sneha"
-                    required
-                    className="mb-0"
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
-                  />
-                </div>
-                <div className="mb-0 [&>div]:mb-0">
-                  <FormInput
-                    label="Last name"
-                    placeholder="Kulkarni"
-                    required
-                    className="mb-0"
-                    value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
-                  />
-                </div>
+              {/* Name row */}
+              <div className="grid grid-cols-2 gap-3 mb-3.5">
+                <CompactField label="First name" placeholder="Sneha" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+                <CompactField label="Last name" placeholder="Kulkarni" value={lastName} onChange={(e) => setLastName(e.target.value)} />
               </div>
-
-              {role === 'employee' && (
-                <FormInput
-                  label="Profession"
-                  placeholder="e.g., Doctor, Nurse, Pharmacist"
-                  required
-                  value={profession}
-                  onChange={(e) => setProfession(e.target.value)}
-                />
-              )}
 
               {role === 'recruiter' && (
                 <>
-                  <FormInput
-                    label="Organisation / Hospital name"
-                    placeholder="Apollo Hospitals"
-                    required
-                    value={orgName}
-                    onChange={(e) => setOrgName(e.target.value)}
-                  />
-                  <FormInput
-                    label="Organisation type"
-                    placeholder="e.g., Hospital, Clinic, Pharmacy"
-                    required
-                    value={orgType}
-                    onChange={(e) => setOrgType(e.target.value)}
-                  />
-                  <FormInput
-                    label="City"
-                    placeholder="e.g., Mumbai, Delhi, Bangalore"
-                    required
-                    value={city}
-                    onChange={(e) => setCity(e.target.value)}
-                  />
+                  <CompactField label="Organisation / Hospital name" placeholder="Apollo Hospitals" value={orgName} onChange={(e) => setOrgName(e.target.value)} wrapClass="mb-3" />
+                  <div className="grid grid-cols-2 gap-3 mb-3">
+                    <CompactField label="Org type" placeholder="Hospital, Clinic…" value={orgType} onChange={(e) => setOrgType(e.target.value)} />
+                    <CompactField label="City" placeholder="Mumbai, Delhi…" value={city} onChange={(e) => setCity(e.target.value)} />
+                  </div>
                 </>
               )}
 
-              <FormInput
-                label="Email address"
-                type="email"
-                placeholder="sneha@example.com"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-              <FormInput
-                label="Phone number"
-                type="tel"
-                placeholder="+919876543210"
-                required
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-              />
-              <FormInput
-                label="Password"
-                type="password"
-                placeholder="Min. 8 characters"
-                hint="At least 8 characters with one number and one letter."
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-              <FormInput
-                label="Confirm password"
-                type="password"
-                placeholder="Re-enter password"
-                className="mb-[22px]"
-                required
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-              />
+              {/* Email + Phone row */}
+              <div className="grid grid-cols-2 gap-3 mb-3.5">
+                <CompactField label="Email address" type="email" placeholder="sneha@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+                <CompactField label="Phone number" type="tel" placeholder="+91 98765 43210" value={phone} onChange={(e) => setPhone(e.target.value)} />
+              </div>
+
+              {/* Password + Confirm row */}
+              <div className="grid grid-cols-2 gap-3 mb-1">
+                <CompactPasswordField label="Password" placeholder="Min. 8 chars" value={password} onChange={(e) => setPassword(e.target.value)} />
+                <CompactPasswordField label="Confirm password" placeholder="Re-enter" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+              </div>
+              <p className="text-xs text-gray-400 mb-3">At least 8 characters with one number and one letter.</p>
 
               <input type="hidden" name="role" value={role} />
 
               <Button type="submit" variant="primary" size="lg" fullWidth disabled={loading}>
-                {loading ? 'Sending OTP…' : `Verify Phone Number`}
+                {loading ? 'Sending OTP…' : 'Verify Phone Number'}
               </Button>
             </form>
           ) : (
             <form onSubmit={handleVerifyOtp} className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <div className="mb-6 p-4 rounded-lg bg-teal-50 border border-teal-100 flex items-start gap-3">
-                 <div className="text-xl mt-1">📱</div>
-                 <div>
-                   <h3 className="text-sm font-semibold text-teal-900 mb-1">Verify your phone</h3>
-                   <p className="text-sm text-teal-800">We've sent a 6-digit code to {phone}</p>
-                 </div>
+              <div className="mb-3 p-2.5 rounded-lg bg-teal-50 border border-teal-100 flex items-start gap-2">
+                <div className="text-base mt-0.5">📱</div>
+                <div>
+                  <h3 className="text-xs font-semibold text-teal-900 mb-0.5">Verify your phone</h3>
+                  <p className="text-[11px] text-teal-800">We've sent a 6-digit code to {phone}</p>
+                </div>
               </div>
 
-              <FormInput
-                label="Verification Code (OTP)"
-                type="text"
-                placeholder="123456"
-                required
-                maxLength={6}
-                value={otp}
-                onChange={(e) => setOtp(e.target.value)}
-                className="text-center text-lg tracking-widest font-mono"
-              />
+              <div className="mb-3">
+                <label className="block text-[11px] font-medium text-gray-700 mb-0.5">Verification Code (OTP)</label>
+                <input
+                  type="text" placeholder="123456" required maxLength={6} value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
+                  className="w-full px-3 py-2 border border-border rounded-lg text-sm text-gray-900 bg-white outline-none focus:border-teal-200 focus:ring-2 focus:ring-teal-200/20 placeholder:text-gray-300 text-center tracking-widest font-mono"
+                />
+              </div>
 
-              <Button type="submit" variant="primary" size="lg" fullWidth disabled={loading || otp.length < 6}>
+              <Button type="submit" variant="primary" size="sm" fullWidth disabled={loading || otp.length < 6}>
                 {loading ? 'Creating account…' : `Create ${role === 'recruiter' ? 'employer' : 'professional'} account`}
               </Button>
 
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={() => setStep('form')}
-                className="w-full mt-4 text-sm text-gray-500 hover:text-gray-700 font-medium"
+                className="w-full mt-2 text-xs text-gray-500 hover:text-gray-700 font-medium"
               >
                 Back to details
               </button>
             </form>
           )}
 
-          <div className="text-center text-[13px] text-gray-500 mt-6">
+          <div className="text-center text-[13px] text-gray-500 mt-3">
             Already have an account?{' '}
             <Link to={`/login?role=${role}`} className="font-semibold text-teal-600 hover:underline">Log in</Link>
           </div>

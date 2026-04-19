@@ -40,6 +40,39 @@ export function Navbar({ variant = 'public' }) {
       : "px-4 py-2 rounded-lg text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors"
   }
 
+  if (variant === 'onboarding') {
+    return (
+      <nav className="sticky top-0 z-50 h-[64px] bg-white border-b border-border">
+        <div className="container-main h-full flex items-center justify-between px-6 md:px-12 w-full mx-auto max-w-[1240px]">
+          <Link to="/" className="font-serif text-2xl font-semibold text-page-text tracking-tight flex items-center">
+            Ready<em className="italic text-page-accent">MD</em>
+          </Link>
+          <div className="relative" ref={avatarRef}>
+            <button
+              onClick={() => setAvatarOpen(o => !o)}
+              className="w-[34px] h-[34px] rounded-full bg-teal-600 text-white flex items-center justify-center text-sm font-semibold hover:ring-2 hover:ring-teal-200 transition-all overflow-hidden"
+            >
+              {avatarPhoto
+                ? <img src={avatarPhoto} alt="avatar" className="w-full h-full object-cover" />
+                : initials || '?'
+              }
+            </button>
+            {avatarOpen && (
+              <div className="absolute right-0 top-[42px] w-48 bg-white border border-border rounded-xl shadow-lg py-1 z-50">
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors"
+                >
+                  <span></span> Log out
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </nav>
+    )
+  }
+
   if (variant === 'employee') {
     const isServicesPage = location.pathname === '/services'
     const isLocumMode = location.pathname.startsWith('/locum')
@@ -136,14 +169,14 @@ export function Navbar({ variant = 'public' }) {
                     onClick={() => setAvatarOpen(false)}
                     className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                   >
-                    <span>🏢</span> Company Profile
+                    <span></span> Company Profile
                   </Link>
                   <div className="my-1 border-t border-border" />
                   <button
                     onClick={handleLogout}
                     className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors"
                   >
-                    <span>🚪</span> Log out
+                    <span></span> Log out
                   </button>
                 </div>
               )}
@@ -160,14 +193,14 @@ export function Navbar({ variant = 'public' }) {
         Ready<em className="italic text-page-accent">MD</em>
       </Link>
       <div className="hidden md:flex items-center gap-2">
-        <Link to="/jobs" className="px-4 py-2 rounded-lg text-sm font-medium text-page-text2 hover:text-page-text hover:bg-page-border transition-colors">Find Jobs</Link>
-        <Link to="/#how" className="px-4 py-2 rounded-lg text-sm font-medium text-page-text2 hover:text-page-text hover:bg-page-border transition-colors">How it works</Link>
-        <Link to="/#professions" className="px-4 py-2 rounded-lg text-sm font-medium text-page-text2 hover:text-page-text hover:bg-page-border transition-colors">Professions</Link>
-        <Link to="/recruiter/post-job" className="px-4 py-2 rounded-lg text-sm font-medium text-page-text2 hover:text-page-text hover:bg-page-border transition-colors">For Employers</Link>
+        <Link to="/login" className="px-4 py-2 rounded-lg text-sm font-medium text-page-text2 hover:text-page-text hover:bg-page-border transition-colors">Find Jobs</Link>
+        <Link to="/login" className="px-4 py-2 rounded-lg text-sm font-medium text-page-text2 hover:text-page-text hover:bg-page-border transition-colors">How it works</Link>
+        <Link to="/login" className="px-4 py-2 rounded-lg text-sm font-medium text-page-text2 hover:text-page-text hover:bg-page-border transition-colors">Professions</Link>
+        <Link to="/login" className="px-4 py-2 rounded-lg text-sm font-medium text-page-text2 hover:text-page-text hover:bg-page-border transition-colors">For Employers</Link>
       </div>
       <div className="flex items-center gap-2.5">
         <Link to="/login" className="px-5 py-[9px] rounded-lg text-sm font-medium text-page-text2 bg-transparent border border-page-border2 hover:text-page-text hover:bg-page-border transition-all">Log in</Link>
-        <Link to="/signup" className="px-5 py-[9px] rounded-lg text-sm font-semibold text-white bg-page-accent hover:-translate-y-[1px] transition-all tracking-tight">Get started</Link>
+        <Link to="/login" className="px-5 py-[9px] rounded-lg text-sm font-semibold text-white bg-page-accent hover:-translate-y-[1px] transition-all tracking-tight">Get started</Link>
       </div>
     </nav>
   )

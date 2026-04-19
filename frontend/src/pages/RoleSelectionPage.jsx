@@ -113,13 +113,31 @@ export function RoleSelectionPage() {
   }
 
   return (
-    <div className="min-h-[calc(100vh-68px)] flex flex-col items-center justify-center p-6 bg-page-bg font-sans">
-      <div className="max-w-[1000px] w-full mt-10 mb-10">
-        <div className="text-center mb-12">
-          <h1 className="font-serif text-3xl md:text-5xl font-normal text-page-text mb-4">
+    <div className="min-h-[calc(100vh-68px)] flex flex-col items-center justify-start pt-8 pb-20 px-4 md:px-8 bg-page-bg font-sans overflow-x-hidden">
+      <div className="max-w-[1240px] w-full">
+        
+        {/* Back button */}
+        <div className="flex justify-start mb-6">
+          <button
+            onClick={() => navigate(-1)}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-page-border2 bg-white text-[13px] font-medium text-page-text2 hover:text-page-text hover:border-page-accent hover:shadow-sm transition-all group"
+          >
+            <svg
+              width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+              className="group-hover:-translate-x-0.5 transition-transform"
+            >
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+            Back
+          </button>
+        </div>
+
+        <div className="text-center mb-10">
+          <h1 className="font-serif text-[28px] md:text-4xl font-normal text-page-text mb-3">
             {fromSignup ? 'Welcome to ReadyMed! What\'s your role?' : 'Select Your Healthcare Role'}
           </h1>
-          <p className="text-[15px] text-page-text2">
+          <p className="text-sm text-page-text2">
             Choose your profession to get started with a personalized experience
           </p>
         </div>
@@ -130,14 +148,14 @@ export function RoleSelectionPage() {
               key={role.id}
               onClick={() => handleRoleSelect(role.id)}
               disabled={loading && selectedRole !== role.id}
-              className="block p-6 bg-page-surface border-2 border-transparent hover:border-page-accent rounded-2xl shadow-sm hover:shadow-lg transition-all group text-left disabled:opacity-50"
+              className="block p-5 bg-page-surface border-2 border-transparent hover:border-page-accent rounded-2xl shadow-sm hover:shadow-lg transition-all group text-left disabled:opacity-50"
             >
-              <div className={`w-14 h-14 rounded-[12px] ${role.color} ${role.textColor} flex items-center justify-center text-3xl mb-5 group-hover:scale-110 transition-transform`}>
+              <div className={`w-12 h-12 rounded-[12px] ${role.color} ${role.textColor} flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform`}>
                 {role.emoji}
               </div>
-              <h2 className="font-serif text-xl font-medium text-page-text mb-2">{role.label}</h2>
-              <p className="text-[13px] text-page-text3 mb-5 min-h-[36px]">{role.description}</p>
-              <ul className="text-[12px] text-page-text2 space-y-2 font-medium">
+              <h2 className="font-serif text-[19px] font-medium text-page-text mb-1.5">{role.label}</h2>
+              <p className="text-xs text-page-text3 mb-4 min-h-[36px]">{role.description}</p>
+              <ul className="text-[11px] text-page-text2 space-y-1.5 font-medium">
                 {role.benefits.slice(0, 2).map((benefit, idx) => (
                   <li key={idx} className="flex gap-2">
                     <span className="text-page-accent flex-shrink-0">✓</span>
@@ -152,9 +170,6 @@ export function RoleSelectionPage() {
           ))}
         </div>
 
-        <div className="text-center text-[13px] text-page-text3">
-          Already have an account? <Link to="/login" className="font-semibold text-page-accent hover:underline">Log in here</Link>
-        </div>
       </div>
     </div>
   )

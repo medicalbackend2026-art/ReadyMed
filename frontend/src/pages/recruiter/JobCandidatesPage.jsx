@@ -29,7 +29,7 @@ export function JobCandidatesPage() {
   const { jobId } = useParams()
   const navigate = useNavigate()
   const location = useLocation()
-  const { jobs, applications, updateApplicationStatus, loadRecruiterData } = useAppContext()
+  const { jobs, applications, updateApplicationStatus, loadRecruiterData, refreshApplications } = useAppContext()
 
   const isLocumMode = location.pathname.startsWith('/recruiter/locum')
   const applicationsPath = isLocumMode ? '/recruiter/locum/applications' : '/recruiter/applications'
@@ -37,37 +37,65 @@ export function JobCandidatesPage() {
   const [jobApps, setJobApps] = useState([])
   const [candidateProfiles, setCandidateProfiles] = useState({}) // uid → profile
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [activeTab, setActiveTab] = useState('candidates') // 'candidates' | 'pipeline'
   const [expandedCard, setExpandedCard] = useState(null)
 
   const job = jobs.find(j => String(j.id) === String(jobId))
 
   useEffect(() => {
-    loadRecruiterData()
-    fetchJobApplications()
+    // Load recruiter data first to ensure applications are synced
+    const loadAndFetch = async () => {
+      await loadRecruiterData()
+      await fetchJobApplications()
+    }
+    loadAndFetch()
   }, [jobId])
+
+  const handleRefresh = async () => {
+    setRefreshing(true)
+    try {
+      await refreshApplications()
+      await fetchJobApplications()
+    } finally {
+      setRefreshing(false)
+    }
+  }
 
   const fetchJobApplications = async () => {
     setLoading(true)
     try {
       const token = await auth.currentUser?.getIdToken()
-      if (token) {
+      if (token && jobId) {
         const res = await fetch(`${API}/api/applications/job/${jobId}`, {
           headers: { Authorization: `Bearer ${token}` },
         })
         if (res.ok) {
           const { applications: apps } = await res.json()
-          setJobApps(apps || [])
-          // Fetch candidate profiles
-          const uids = [...new Set(apps.map(a => a.applicantUid).filter(Boolean))]
-          fetchCandidateProfiles(uids, token)
-          return
+          if (apps && apps.length > 0) {
+            setJobApps(apps)
+            // Fetch candidate profiles
+            const uids = [...new Set(apps.map(a => a.applicantUid).filter(Boolean))]
+            if (uids.length > 0) {
+              await fetchCandidateProfiles(uids, token)
+            }
+            setLoading(false)
+            return
+          }
         }
       }
-    } catch {}
-    // Fallback: filter from context
-    const filtered = applications.filter(a => String(a.jobId) === String(jobId) || a.jobTitle === job?.title)
-    setJobApps(filtered)
+    } catch (err) {
+      console.error('Error fetching applications:', err)
+    }
+    
+    // Fallback: filter from applications context
+    if (jobId) {
+      const filtered = applications.filter(a => 
+        String(a.jobId) === String(jobId) || 
+        (job && a.jobTitle === job.title)
+      )
+      setJobApps(filtered)
+    }
     setLoading(false)
   }
 
@@ -139,6 +167,16 @@ export function JobCandidatesPage() {
             {job && <div className="text-[13px] text-gray-500 mt-0.5">{job.type} · {job.location} · {job.department || job.profession}</div>}
           </div>
           <div className="flex items-center gap-2.5">
+            <button
+              onClick={handleRefresh}
+              disabled={loading || refreshing}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Refresh applications"
+            >
+              <svg className={`w-5 h-5 text-gray-600 ${refreshing ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </button>
             <span className="text-[13px] font-bold text-blue-700 bg-blue-50 px-3 py-1.5 rounded-full">{jobApps.length} applicant{jobApps.length !== 1 ? 's' : ''}</span>
           </div>
         </div>

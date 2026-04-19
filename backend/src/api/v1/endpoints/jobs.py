@@ -121,14 +121,15 @@ async def apply_for_job(job_id: str, body: dict, user: dict = Depends(get_curren
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
     job = job_doc.to_dict()
 
-    existing = (
+    # Check if user has already applied to this job
+    existing_applications = list(
         db.collection("applications")
         .where("jobId", "==", job_id)
         .where("applicantUid", "==", user["uid"])
-        .get()
+        .stream()
     )
-    if existing:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Already applied")
+    if existing_applications:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="You have already applied to this job")
 
     application = {
         "jobId": job_id,

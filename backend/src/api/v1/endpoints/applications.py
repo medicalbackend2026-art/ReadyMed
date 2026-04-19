@@ -6,6 +6,7 @@ Routes:
   GET   /api/applications/mine          — candidate's own submitted applications
   GET   /api/applications/for-recruiter — all applications for this recruiter's jobs
   GET   /api/applications/job/{job_id}  — all applications for a specific job (recruiter)
+  GET   /api/applications/debug         — DEBUG: show application counts and info
   PATCH /api/applications/{id}/status   — recruiter updates application status
 """
 
@@ -70,3 +71,41 @@ async def update_application_status(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
     ref.update({"status": body.get("status"), "updatedAt": SERVER_TIMESTAMP})
     return {"success": True}
+
+
+@router.get("/debug", summary="DEBUG: Get diagnostic info about applications")
+async def debug_applications(user: dict = Depends(get_current_user)):
+    """For debugging - shows application counts and info"""
+    db = firebase_db()
+    
+    # Count all applications with this recruiter UID
+    recruiter_apps = list(
+        db.collection("applications").where("recruiterUid", "==", user["uid"]).stream()
+    )
+    
+    # Count all applications that belong to this recruiter's jobs
+    recruiter_jobs = list(
+        db.collection("jobs").where("recruiterUid", "==", user["uid"]).stream()
+    )
+    job_ids = [doc.id for doc in recruiter_jobs]
+    
+    # Count applications for these jobs
+    job_apps = []
+    for job_id in job_ids:
+        job_apps.extend(list(
+            db.collection("applications").where("jobId", "==", job_id).stream()
+        ))
+    
+    return {
+        "recruiter_uid": user["uid"],
+        "recruiter_email": user["email"],
+        "recruiter_jobs_count": len(recruiter_jobs),
+        "recruiter_apps_direct_count": len(recruiter_apps),
+        "job_apps_count": len(job_apps),
+        "jobs": [{"id": j.id, "title": j.to_dict().get("title"), "status": j.to_dict().get("status")} for j in recruiter_jobs],
+        "app_statuses": {
+            "by_recruiter_uid": {s: len([a for a in recruiter_apps if a.to_dict().get("status") == s]) for s in ["New", "Interviewing", "Offer sent", "Rejected"]},
+            "by_job_id": {s: len([a for a in job_apps if a.to_dict().get("status") == s]) for s in ["New", "Interviewing", "Offer sent", "Rejected"]},
+        }
+    }
+

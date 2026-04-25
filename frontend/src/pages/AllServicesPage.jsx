@@ -470,7 +470,7 @@ export function AllServicesPage() {
         <div>
           {/* Back button */}
           <button
-            onClick={() => navigate(-1)}
+            onClick={() => navigate('/role-selection')}
             className="mb-8 inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-200 bg-white text-[12px] font-medium text-gray-600 hover:text-gray-900 hover:border-teal-600 hover:shadow-sm transition-all group w-fit"
           >
             <svg
@@ -482,14 +482,14 @@ export function AllServicesPage() {
             </svg>
             Back
           </button>
-          
+
           <div className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-4 ml-2">Services</div>
 
           <button
             onClick={() => scrollToCategory('all')}
             className={`w-full flex items-center justify-between px-3 py-3 rounded-xl transition-all text-[13px] font-semibold mb-6 ${activeCategory === 'all'
-                ? 'bg-amber-100 text-amber-900 shadow-sm border border-amber-200'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-white border border-transparent hover:border-gray-200/60'
+              ? 'bg-amber-100 text-amber-900 shadow-sm border border-amber-200'
+              : 'text-gray-600 hover:text-gray-900 hover:bg-white border border-transparent hover:border-gray-200/60'
               }`}
           >
             <div className="flex items-center gap-3">
@@ -513,8 +513,8 @@ export function AllServicesPage() {
                 key={category.id}
                 onClick={() => scrollToCategory(category.id)}
                 className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all text-[13px] font-medium ${activeCategory === category.id
-                    ? 'bg-white text-gray-900 shadow-sm border border-gray-200'
-                    : 'text-gray-500 hover:text-gray-800 hover:bg-white border border-transparent hover:border-gray-200/60'
+                  ? 'bg-white text-gray-900 shadow-sm border border-gray-200'
+                  : 'text-gray-500 hover:text-gray-800 hover:bg-white border border-transparent hover:border-gray-200/60'
                   }`}
               >
                 <div className="flex items-center gap-3">
@@ -541,7 +541,7 @@ export function AllServicesPage() {
             <div className="text-[9px] text-teal-700 mt-2 uppercase tracking-widest font-bold bg-teal-50 inline-block px-2 py-1 rounded-md border border-teal-100/50">
               {isEmployer ? 'Employer Account' : 'Professional Account'}
             </div>
-            <button 
+            <button
               onClick={() => navigate('/role-selection?from=dashboard')}
               className="mt-4 text-[11px] text-blue-600 hover:text-blue-800 hover:underline font-medium block"
             >

@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getUserProfile, getCompanyProfile, saveUserProfile, getProfileCompletion, getCompanyCompletion } from '../hooks/useUserProfile'
 import { useAppContext } from '../context/AppContext'
+import { BackButton } from '../components/BackButton'
 
 const SERVICE_CATEGORIES = [
   {
@@ -469,19 +470,12 @@ export function AllServicesPage() {
       <div className="w-64 bg-[#f8f9fa] border-r border-gray-200/60 p-6 sticky top-0 h-screen overflow-y-auto shrink-0 flex flex-col justify-between hidden md:flex z-20">
         <div>
           {/* Back button */}
-          <button
+          <BackButton
             onClick={() => navigate('/role-selection')}
-            className="mb-8 inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-200 bg-white text-[12px] font-medium text-gray-600 hover:text-gray-900 hover:border-teal-600 hover:shadow-sm transition-all group w-fit"
-          >
-            <svg
-              width="14" height="14" viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-              className="group-hover:-translate-x-0.5 transition-transform"
-            >
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
-            Back
-          </button>
+            label="Back"
+            variant="pill"
+            className="mb-8 w-fit"
+          />
 
           <div className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-4 ml-2">Services</div>
 

@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { saveUserProfile } from '../hooks/useUserProfile'
 import { useAppContext } from '../context/AppContext'
+import { BackButton } from '../components/BackButton'
 
 const HEALTHCARE_ROLES = [
   {
@@ -116,21 +117,8 @@ export function RoleSelectionPage() {
     <div className="min-h-[calc(100vh-68px)] flex flex-col items-center justify-start pt-8 pb-20 px-4 md:px-8 bg-page-bg font-sans overflow-x-hidden">
       <div className="max-w-[1240px] w-full">
         
-        {/* Back button */}
         <div className="flex justify-start mb-6">
-          <button
-            onClick={() => navigate(-1)}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-page-border2 bg-white text-[13px] font-medium text-page-text2 hover:text-page-text hover:border-page-accent hover:shadow-sm transition-all group"
-          >
-            <svg
-              width="16" height="16" viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-              className="group-hover:-translate-x-0.5 transition-transform"
-            >
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
-            Back
-          </button>
+          <BackButton onClick={() => navigate(-1)} label="Back" />
         </div>
 
         <div className="text-center mb-10">

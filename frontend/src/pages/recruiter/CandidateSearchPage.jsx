@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Button } from '../../components/Button'
 import { getAuth } from 'firebase/auth'
+import { BackButton } from '../../components/BackButton'
 
 // Custom Modal Component for Candidate Profile
 function CandidateProfileModal({ isOpen, onClose, candidate, onInvite, isInvited }) {
@@ -309,12 +310,11 @@ export function CandidateSearchPage() {
       {/* CANDIDATE LISTINGS */}
       <main className="p-5 md:py-7 md:px-8">
         
-        <button 
+        <BackButton
           onClick={() => navigate(isLocumMode ? '/recruiter/locum/post' : '/recruiter/services')}
-          className="mb-6 inline-flex items-center gap-2 px-3 py-2 text-teal-600 hover:bg-teal-50 rounded-lg transition-colors font-medium text-sm"
-        >
-          ← Back to {isLocumMode ? 'Locum posting' : 'Services'}
-        </button>
+          label={`Back to ${isLocumMode ? 'Locum posting' : 'Services'}`}
+          className="mb-6"
+        />
 
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 gap-4">
           <div>

@@ -177,6 +177,7 @@ export function HomePage() {
               bg: 'bg-blue-50',
               border: 'border-blue-100',
               dot: 'bg-blue-500',
+              chipStyle: true,
               services: [
                 { icon: '🏢', name: 'Clinic Space', desc: 'Rent or share a fully-equipped OPD room.' },
                 { icon: '💼', name: 'Jobs & Hiring', desc: 'Apply for or post verified medical positions.' },
@@ -191,6 +192,7 @@ export function HomePage() {
               bg: 'bg-amber-50',
               border: 'border-amber-100',
               dot: 'bg-amber-500',
+              chipStyle: true,
               services: [
                 { icon: '🔬', name: 'Buy Equipment', desc: 'New & certified secondhand diagnostic equipment.' },
                 { icon: '🪑', name: 'Clinic Furniture', desc: 'Exam tables, waiting room sets & reception counters.' },
@@ -203,6 +205,7 @@ export function HomePage() {
               bg: 'bg-purple-50',
               border: 'border-purple-100',
               dot: 'bg-purple-500',
+              chipStyle: true,
               services: [
                 { icon: '📱', name: 'Social Media', desc: 'Content, Google Reviews & online reputation management.' },
                 { icon: '🌐', name: 'Clinic Website', desc: 'Professional site with SEO & online booking.' },
@@ -216,6 +219,7 @@ export function HomePage() {
               bg: 'bg-teal-50',
               border: 'border-teal-100',
               dot: 'bg-teal-500',
+              chipStyle: true,
               services: [
                 { icon: '📋', name: 'EMR / EHR System', desc: 'Digital prescriptions & ABDM-ready patient records.' },
                 { icon: '🧾', name: 'Billing & GST', desc: 'Automated invoicing, insurance claims & GST filing.' },
@@ -232,6 +236,7 @@ export function HomePage() {
               bg: 'bg-rose-50',
               border: 'border-rose-100',
               dot: 'bg-rose-500',
+              chipStyle: true,
               services: [
                 { icon: '🏅', name: 'NABH Accreditation', desc: 'Full documentation & certification support.' },
                 { icon: '📃', name: 'Drug License', desc: 'New application & annual renewal guidance.' },
@@ -248,20 +253,42 @@ export function HomePage() {
                 <div className="h-px flex-1 bg-page-border" />
               </div>
               {/* Service chips grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                {cat.services.map((svc, si) => (
-                  <Link
-                    key={svc.name}
-                    to="/login"
-                    className={`group flex flex-col gap-2 p-4 rounded-2xl border ${cat.border} ${cat.bg} hover:scale-[1.03] hover:shadow-md transition-all duration-200 cursor-pointer`}
-                    style={{ transitionDelay: `${si * 40}ms` }}
-                  >
-                    <div className="text-xl leading-none">{svc.icon}</div>
-                    <div className={`text-[13px] font-semibold ${cat.color}`}>{svc.name}</div>
-                    <div className="text-[11px] text-page-text3 leading-relaxed">{svc.desc}</div>
-                  </Link>
-                ))}
-              </div>
+              {cat.chipStyle ? (
+                <div className="flex flex-wrap gap-3">
+                  {cat.services.map((svc, si) => (
+                    <div key={svc.name} className="relative group/chip">
+                      <Link
+                        to="/login"
+                        className={`flex items-center gap-2.5 px-5 py-3 rounded-full border ${cat.border} ${cat.bg} text-sm font-medium hover:scale-[1.03] hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer`}
+                        style={{ transitionDelay: `${si * 40}ms` }}
+                      >
+                        <span className="text-xl leading-none">{svc.icon}</span>
+                        <span className={`font-semibold ${cat.color}`}>{svc.name}</span>
+                      </Link>
+                      {/* Tooltip */}
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2.5 w-48 px-3 py-2.5 rounded-xl bg-gray-900 text-white text-[12px] leading-relaxed text-center shadow-xl opacity-0 invisible group-hover/chip:opacity-100 group-hover/chip:visible translate-y-1 group-hover/chip:translate-y-0 transition-all duration-200 pointer-events-none z-50">
+                        {svc.desc}
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                  {cat.services.map((svc, si) => (
+                    <Link
+                      key={svc.name}
+                      to="/login"
+                      className={`group flex flex-col gap-2 p-4 rounded-2xl border ${cat.border} ${cat.bg} hover:scale-[1.03] hover:shadow-md transition-all duration-200 cursor-pointer`}
+                      style={{ transitionDelay: `${si * 40}ms` }}
+                    >
+                      <div className="text-xl leading-none">{svc.icon}</div>
+                      <div className={`text-[13px] font-semibold ${cat.color}`}>{svc.name}</div>
+                      <div className="text-[11px] text-page-text3 leading-relaxed">{svc.desc}</div>
+                    </Link>
+                  ))}
+                </div>
+              )}
             </div>
           ))}
 

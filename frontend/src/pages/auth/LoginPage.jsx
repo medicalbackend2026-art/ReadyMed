@@ -4,6 +4,7 @@ import { signInWithPopup, onAuthStateChanged } from 'firebase/auth'
 import { auth, googleProvider } from '../../firebase'
 import { saveUserProfile } from '../../hooks/useUserProfile'
 import { useAppContext } from '../../context/AppContext'
+import { BackButton } from '../../components/BackButton'
 
 export function LoginPage() {
   const navigate = useNavigate()
@@ -132,19 +133,7 @@ export function LoginPage() {
 
       {/* Left Panel */}
       <div className="hidden md:flex flex-col justify-center p-12 relative overflow-hidden bg-gradient-to-br from-teal-800 to-teal-700">
-        <Link
-          to="/"
-          className="absolute top-6 left-6 md:top-15 md:left-15 inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white/20 bg-black/10 backdrop-blur-md text-[13px] font-medium text-white/90 hover:text-white hover:bg-black/20 hover:border-white/30 transition-all group z-10"
-        >
-          <svg
-            width="16" height="16" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-            className="group-hover:-translate-x-0.5 transition-transform"
-          >
-            <polyline points="15 18 9 12 15 6" />
-          </svg>
-          Back
-        </Link>
+        <BackButton to="/" label="Back" variant="transparent" className="absolute top-6 left-6 md:top-15 md:left-15 z-10" />
         <div className="absolute -bottom-[20%] -left-[10%] w-[400px] h-[400px] rounded-full bg-[radial-gradient(circle,rgba(93,202,165,0.12)_0%,transparent_70%)]" />
         <div className="relative z-10">
           <div className="text-[11px] font-semibold uppercase tracking-[0.1em] text-teal-200 mb-5">

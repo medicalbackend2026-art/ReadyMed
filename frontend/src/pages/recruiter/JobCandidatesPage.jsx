@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { useAppContext } from '../../context/AppContext'
 import { auth } from '../../firebase'
+import { BackButton } from '../../components/BackButton'
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
@@ -157,10 +158,7 @@ export function JobCandidatesPage() {
     <div className="max-w-[1100px] mx-auto px-6 py-8 pb-20 font-sans">
       {/* Header */}
       <div className="mb-6">
-        <button onClick={() => navigate(applicationsPath)} className="flex items-center gap-1.5 text-[13px] text-gray-500 hover:text-gray-800 mb-4 transition-colors">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-          Back to all jobs
-        </button>
+        <BackButton onClick={() => navigate(applicationsPath)} label="Back" className="mb-4" />
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
             <h1 className="font-serif text-[24px] text-gray-900 leading-tight">{job?.title || 'Job Applications'}</h1>

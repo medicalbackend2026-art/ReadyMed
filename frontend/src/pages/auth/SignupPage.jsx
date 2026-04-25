@@ -15,6 +15,7 @@ import { FormInput } from '../../components/FormElements'
 import { Button } from '../../components/Button'
 import { saveUserProfile, getUserProfile, getProfileCompletion } from '../../hooks/useUserProfile'
 import { useAppContext } from '../../context/AppContext'
+import { BackButton } from '../../components/BackButton'
 
 // Field helpers — controlled spacing (avoids FormInput's fixed mb-[18px])
 function CompactField({ label, type = 'text', placeholder, value, onChange, required = true, wrapClass = '' }) {
@@ -269,20 +270,7 @@ export function SignupPage() {
       {/* Right Panel - Form */}
       <div className="relative flex flex-col items-center justify-center h-full overflow-hidden px-8 py-3 w-full bg-white">
         
-        {/* Back Button */}
-        <Link
-          to="/"
-          className="absolute top-6 left-6 md:top-8 md:left-8 inline-flex items-center gap-2 px-4 py-2 rounded-full border border-gray-200 bg-white text-[13px] font-medium text-gray-500 hover:text-gray-900 hover:border-teal-600 hover:shadow-sm transition-all group z-10"
-        >
-          <svg
-            width="16" height="16" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-            className="group-hover:-translate-x-0.5 transition-transform"
-          >
-            <polyline points="15 18 9 12 15 6" />
-          </svg>
-          Home
-        </Link>
+        <BackButton to="/" label="Home" className="absolute top-6 left-6 md:top-8 md:left-8 z-10" />
         
         <div className="w-full max-w-[460px]">
           <h1 className="font-serif text-[26px] text-gray-900 mb-1">Create your account</h1>

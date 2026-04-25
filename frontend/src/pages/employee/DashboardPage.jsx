@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Button } from '../../components/Button'
 import { useAppContext } from '../../context/AppContext'
 import { getUserProfile, getProfileCompletion } from '../../hooks/useUserProfile'
+import { BackButton } from '../../components/BackButton'
 
 export function DashboardPage() {
   const navigate = useNavigate()
@@ -90,13 +91,7 @@ export function DashboardPage() {
   return (
     <div className="max-w-[1100px] mx-auto px-6 py-8 pb-20 font-sans">
       
-      {/* Back button */}
-      <button 
-        onClick={() => navigate(isLocumMode ? '/services' : '/services')}
-        className="mb-6 inline-flex items-center gap-2 px-4 py-2 text-[13px] font-semibold text-teal-700 bg-teal-50 border border-teal-300 rounded-lg hover:bg-teal-100 transition-colors"
-      >
-        ← Back to Services
-      </button>
+      <BackButton onClick={() => navigate('/services')} label="Back" className="mb-6" />
 
       {/* Welcome Header */}
       <div className="flex justify-between items-center mb-7">

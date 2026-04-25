@@ -8,6 +8,81 @@ import { auth } from '../../firebase'
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
+// Two-level profession → role mapping
+const PROFESSION_ROLES = {
+  'Doctor': [
+    'RMO — Resident Medical Officer',
+    'CMO — Chief Medical Officer',
+    'MD Medicine / Physician',
+    'Anaesthetist',
+    'ICU In-Charge',
+    'Surgeon',
+    'Gynaecologist',
+    'Paediatrician',
+    'General Physician',
+    'ICU / Critical Care',
+    'Radiologist',
+    'Any specialty via the locum portal',
+  ],
+  'Nurse & Paramedical': [
+    'Staff Nurse (GNM / B.Sc Nursing)',
+    'ICU Nurse',
+    'OPD Nurse',
+    'Home Care Nurse',
+    'Brother / Male Nurse',
+    'Ward Boy / Helper / Attendant',
+    'Home Care Helper',
+    'Paramedic',
+    'Lab Technician',
+    'OT Operator / Technician',
+    'Pharmacist',
+  ],
+  'Administrative Staff': [
+    'Receptionist',
+    'Clinic Manager',
+    'Accountant',
+    'Medical Record Staff',
+    'HR / Recruitment',
+    'Patient Relationship Executives',
+    'Other / Custom Role',
+  ],
+  'Management & Business': [
+    'Operations Managers',
+    'Business / Growth Roles',
+    'Business Development Managers',
+  ],
+  'Marketing': [
+    'Digital Marketing Executives',
+    'Social Media Managers',
+  ],
+  'Support & Facility': [
+    'Housekeeping Staff',
+    'Security Guards',
+    'Drivers / Ambulance Drivers',
+    'Maintenance Technicians',
+    'Laundry Staff',
+    'Store Keepers',
+  ],
+  'IT & Technology': [
+    'IT Support',
+    'Hospital Management Software Operators',
+    'Data Entry Operators',
+  ],
+  'Allied Health Professionals': [
+    'Physiotherapist',
+    'Dietitian / Nutritionist',
+    'Dental Assistant',
+    'CSSD Technician',
+    'Medical Coder',
+    'Hospital Administrator',
+    'Ambulance Driver / EMT',
+    'Medical Social Worker',
+    'Counsellor / Psychologist',
+  ],
+}
+
+const ALL_PROFESSIONS = Object.keys(PROFESSION_ROLES)
+
 function StepCard({ id, num, title, desc, children }) {
   return (
     <div id={id} className="bg-white border border-border rounded-2xl p-7 mb-5">
@@ -38,6 +113,7 @@ export function PostJobPage() {
 
   const [title, setTitle] = useState(editJob?.title || '')
   const [profession, setProfession] = useState(editJob?.profession || 'Doctor')
+  const [role, setRole] = useState(editJob?.role || '')
   const [department, setDepartment] = useState(editJob?.department || '')
   const [employmentType, setEmploymentType] = useState(isLocumMode ? 'Locum' : (editJob?.type || 'Full-time'))
   const [openings, setOpenings] = useState(editJob?.openings || '1')
@@ -52,6 +128,7 @@ export function PostJobPage() {
   const [description, setDescription] = useState(editJob?.description || '')
   const [benefits, setBenefits] = useState(editJob?.benefits || '')
   const [deadline, setDeadline] = useState(editJob?.deadline || '')
+  const [salaryPeriod, setSalaryPeriod] = useState(editJob?.salaryPeriod || 'monthly')
 
   const [locumHoursPerDay, setLocumHoursPerDay] = useState(editJob?.locumHoursPerDay || editJob?.locumHoursPerWeek || '')
   const [locumShiftStart, setLocumShiftStart] = useState(editJob?.locumShiftStart || '')
@@ -76,21 +153,39 @@ export function PostJobPage() {
   const [savingDraft, setSavingDraft] = useState(false)
   const [saveError, setSaveError] = useState('')
 
+  // Reset role when profession changes
+  const handleProfessionChange = (e) => {
+    setProfession(e.target.value)
+    setRole('')
+  }
+
   useEffect(() => {
     if (!isLocumMode) return
-    if (profession !== 'Doctor' && profession !== 'Nurse') setProfession('Doctor')
+    if (profession !== 'Doctor' && profession !== 'Nurse & Paramedical') {
+      setProfession('Doctor')
+      setRole('')
+    }
   }, [isLocumMode, profession])
+
+  const roleOptions = PROFESSION_ROLES[profession] || []
+  const showRoleDropdown = roleOptions.length > 0
 
   const buildJobData = (status = 'active') => {
     const minNum = parseInt(String(salaryMin).replace(/,/g, '')) || 0
     const maxNum = parseInt(String(salaryMax).replace(/,/g, '')) || 0
+    const fmtAmt = (n) =>
+      salaryPeriod === 'yearly'
+        ? `₹${(n / 100000).toFixed(n % 100000 === 0 ? 0 : 1)}L`
+        : `₹${n.toLocaleString('en-IN')}`
+    const period = salaryPeriod === 'yearly' ? '/ year' : '/ month'
     const salaryStr = minNum && maxNum
-      ? `₹${(minNum / 100000).toFixed(0)}L - ₹${(maxNum / 100000).toFixed(0)}L / year`
-      : salaryMin || 'Negotiable'
+      ? `${fmtAmt(minNum)} - ${fmtAmt(maxNum)} ${period}`
+      : salaryMin ? `${salaryMin} ${period}` : 'Negotiable'
     return {
       ...(editJob || {}),
       title,
       profession,
+      role,
       department,
       type: isLocumMode ? 'Locum' : employmentType,
       employmentType: isLocumMode ? 'Locum' : employmentType,
@@ -111,6 +206,7 @@ export function PostJobPage() {
       skills,
       salaryMin: minNum,
       salaryMax: maxNum,
+      salaryPeriod,
       salary: salaryStr,
       notice,
       description,
@@ -218,20 +314,32 @@ export function PostJobPage() {
             <FormSelect
               label="Profession required"
               value={profession}
-              onChange={e => setProfession(e.target.value)}
+              onChange={handleProfessionChange}
               options={isLocumMode
                 ? [
-                    {label:'Doctor',value:'Doctor'},{label:'Nurse',value:'Nurse'},
+                    { label: 'Doctor', value: 'Doctor' },
+                    { label: 'Nurse & Paramedical', value: 'Nurse & Paramedical' },
                   ]
-                : [
-                    {label:'Doctor',value:'Doctor'},{label:'Nurse',value:'Nurse'},
-                    {label:'Pharmacist',value:'Pharmacist'},{label:'Lab Technician',value:'Lab Technician'},
-                    {label:'Physiotherapist',value:'Physiotherapist'},{label:'Radiologist',value:'Radiologist'},
-                    {label:'Paramedic',value:'Paramedic'},{label:'Hospital Admin',value:'Hospital Admin'}
-                  ]
+                : ALL_PROFESSIONS.map(p => ({ label: p, value: p }))
               }
               className="mb-0"
             />
+
+            {showRoleDropdown && (
+              <FormSelect
+                label="Role / Specialisation"
+                value={role}
+                onChange={e => setRole(e.target.value)}
+                options={[
+                  { label: '— Select role —', value: '' },
+                  ...roleOptions.map(r => ({ label: r, value: r })),
+                ]}
+                className="mb-0"
+              />
+            )}
+          </div>
+
+          <div className="mb-[18px]">
             <FormInput label="Department" value={department} onChange={e => setDepartment(e.target.value)} placeholder="e.g. Internal Medicine" className="mb-0" />
           </div>
 
@@ -330,9 +438,43 @@ export function PostJobPage() {
             </div>
           </div>
 
-          <div className="grid sm:grid-cols-2 gap-3 mb-[18px]">
-            <FormInput label="Salary range — min (₹/year)" value={salaryMin} onChange={e => setSalaryMin(e.target.value)} placeholder="e.g. 18,00,000" className="mb-0" />
-            <FormInput label="Salary range — max (₹/year)" value={salaryMax} onChange={e => setSalaryMax(e.target.value)} placeholder="e.g. 24,00,000" className="mb-0" />
+          {/* Salary period toggle + inputs */}
+          <div className="mb-[18px]">
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-[13px] font-medium text-gray-700">Salary range</label>
+              <div className="flex items-center bg-gray-100 rounded-full p-0.5 gap-0.5">
+                {['monthly', 'yearly'].map(p => (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => setSalaryPeriod(p)}
+                    className={`px-3.5 py-1 rounded-full text-[12px] font-semibold transition-all ${
+                      salaryPeriod === p
+                        ? 'bg-white text-blue-700 shadow-sm border border-blue-100'
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    {p === 'monthly' ? 'Monthly' : 'Yearly'}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="grid sm:grid-cols-2 gap-3">
+              <FormInput
+                label={`Min (₹/${salaryPeriod === 'monthly' ? 'month' : 'year'})`}
+                value={salaryMin}
+                onChange={e => setSalaryMin(e.target.value)}
+                placeholder={salaryPeriod === 'monthly' ? 'e.g. 80,000' : 'e.g. 9,60,000'}
+                className="mb-0"
+              />
+              <FormInput
+                label={`Max (₹/${salaryPeriod === 'monthly' ? 'month' : 'year'})`}
+                value={salaryMax}
+                onChange={e => setSalaryMax(e.target.value)}
+                placeholder={salaryPeriod === 'monthly' ? 'e.g. 1,20,000' : 'e.g. 14,40,000'}
+                className="mb-0"
+              />
+            </div>
           </div>
 
           <div className="max-w-[250px] mb-0">

@@ -54,7 +54,7 @@ The project is structured as a monorepo containing two main directories:
 ### Prerequisites
 Make sure you have the following installed on your machine:
 - Node.js (v18 or higher recommended)
-- npm or yarn
+- npm
 - A Firebase Project (for authentication and database)
 
 ### Installation
